@@ -431,7 +431,7 @@
                     <li>View the generated HTML code and preview.</li>
                     <li>Copy the HTML code to use in Chumbaka LMS.</li>
                 </ol><br>
-                <p>Source: <a href="https://github.com/boysbytes/cbk-markdown-to-html" target="_blank">https://github.com/boysbytes/cbk-markdown-to-html</a></p>
+                <p>Source: <a href="https://github.com/boysbytes/cbk-markdown-to-html" target="_blank">https://github.com/boysbytes/cbk-markdown-to-html/</a></p>
             </div>
 
             <div class="converter-body">
@@ -660,77 +660,77 @@
             }
         }
 
-function applyCustomSpacing(container, config) {
-    // Process top-level children
-    const children = Array.from(container.children);
-    for (let i = 0; i < children.length - 1; i++) {
-        const currentElement = children[i];
-        const nextElement = children[i+1];
-        const currentType = getElementType(currentElement);
-        const nextType = getElementType(nextElement);
-        const ruleKey = `${currentType}_to_${nextType}`;
-        const brCount = config[ruleKey] ?? config["default"] ?? 1;
-        if (brCount > 0) {
-            currentElement.insertAdjacentHTML('afterend', '<br>'.repeat(brCount));
-        }
-    }
-
-    // Process intra-list spacing (between li elements) and within li elements
-    const lists = container.querySelectorAll('ol, ul');
-    lists.forEach(list => {
-        const listType = list.tagName.toLowerCase();
-        const listItems = Array.from(list.children).filter(child => child.tagName === 'LI');
-
-        // Process spacing between li elements
-        for (let i = 0; i < listItems.length - 1; i++) {
-            const currentLi = listItems[i];
-            const nextLi = listItems[i + 1];
-            const currentLiLevel = currentLi.closest('ol, ul').parentElement.tagName === 'LI' ? 'l2' : 'l1';
-            const nextLiLevel = nextLi.closest('ol, ul').parentElement.tagName === 'LI' ? 'l2' : 'l1';
-            const ruleKey = `${listType}-li-${currentLiLevel}_to_${listType}-li-${nextLiLevel}`;
-            const brCount = config[ruleKey] ?? config["default"] ?? 1;
-            if (brCount > 0) {
-                currentLi.insertAdjacentHTML('beforeend', '<br>'.repeat(brCount));
-            }
-        }
-
-        // Process block-level children within each li
-        listItems.forEach(li => {
-            const blockElements = ['p', 'table', 'div', 'iframe', 'ul', 'ol', 'details', 'blockquote', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
-            const blockChildren = Array.from(li.children).filter(child => {
-                const tagName = child.tagName.toLowerCase();
-                return blockElements.includes(tagName) ||
-                       (tagName === 'table' && child.classList.contains('emoji-blockquote'));
-            });
-
-            for (let i = 0; i < blockChildren.length - 1; i++) {
-                const currentElement = blockChildren[i];
-                const nextElement = blockChildren[i + 1];
+        function applyCustomSpacing(container, config) {
+            // Process top-level children
+            const children = Array.from(container.children);
+            for (let i = 0; i < children.length - 1; i++) {
+                const currentElement = children[i];
+                const nextElement = children[i+1];
                 const currentType = getElementType(currentElement);
                 const nextType = getElementType(nextElement);
                 const ruleKey = `${currentType}_to_${nextType}`;
                 const brCount = config[ruleKey] ?? config["default"] ?? 1;
                 if (brCount > 0) {
-                    // Check for existing br tags between currentElement and nextElement
-                    let node = currentElement.nextSibling;
-                    let existingBrCount = 0;
-                    while (node && node !== nextElement) {
-                        if (node.nodeType === Node.ELEMENT_NODE && node.tagName.toLowerCase() === 'br') {
-                            existingBrCount++;
-                        }
-                        node = node.nextSibling;
-                    }
-                    if (existingBrCount < brCount) {
-                        const additionalBrCount = brCount - existingBrCount;
-                        if (additionalBrCount > 0) {
-                            currentElement.insertAdjacentHTML('afterend', '<br>'.repeat(additionalBrCount));
-                        }
-                    }
+                    currentElement.insertAdjacentHTML('afterend', '<br>'.repeat(brCount));
                 }
             }
-        });
-    });
-}
+
+            // Process intra-list spacing (between li elements) and within li elements
+            const lists = container.querySelectorAll('ol, ul');
+            lists.forEach(list => {
+                const listType = list.tagName.toLowerCase();
+                const listItems = Array.from(list.children).filter(child => child.tagName === 'LI');
+
+                // Process spacing between li elements
+                for (let i = 0; i < listItems.length - 1; i++) {
+                    const currentLi = listItems[i];
+                    const nextLi = listItems[i + 1];
+                    const currentLiLevel = currentLi.closest('ol, ul').parentElement.tagName === 'LI' ? 'l2' : 'l1';
+                    const nextLiLevel = nextLi.closest('ol, ul').parentElement.tagName === 'LI' ? 'l2' : 'l1';
+                    const ruleKey = `${listType}-li-${currentLiLevel}_to_${listType}-li-${nextLiLevel}`;
+                    const brCount = config[ruleKey] ?? config["default"] ?? 1;
+                    if (brCount > 0) {
+                        currentLi.insertAdjacentHTML('beforeend', '<br>'.repeat(brCount));
+                    }
+                }
+
+                // Process block-level children within each li
+                listItems.forEach(li => {
+                    const blockElements = ['p', 'table', 'div', 'iframe', 'ul', 'ol', 'details', 'blockquote', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+                    const blockChildren = Array.from(li.children).filter(child => {
+                        const tagName = child.tagName.toLowerCase();
+                        return blockElements.includes(tagName) ||
+                               (tagName === 'table' && child.classList.contains('emoji-blockquote'));
+                    });
+
+                    for (let i = 0; i < blockChildren.length - 1; i++) {
+                        const currentElement = blockChildren[i];
+                        const nextElement = blockChildren[i + 1];
+                        const currentType = getElementType(currentElement);
+                        const nextType = getElementType(nextElement);
+                        const ruleKey = `${currentType}_to_${nextType}`;
+                        const brCount = config[ruleKey] ?? config["default"] ?? 1;
+                        if (brCount > 0) {
+                            // Check for existing br tags between currentElement and nextElement
+                            let node = currentElement.nextSibling;
+                            let existingBrCount = 0;
+                            while (node && node !== nextElement) {
+                                if (node.nodeType === Node.ELEMENT_NODE && node.tagName.toLowerCase() === 'br') {
+                                    existingBrCount++;
+                                }
+                                node = node.nextSibling;
+                            }
+                            if (existingBrCount < brCount) {
+                                const additionalBrCount = brCount - existingBrCount;
+                                if (additionalBrCount > 0) {
+                                    currentElement.insertAdjacentHTML('afterend', '<br>'.repeat(additionalBrCount));
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        }
 
 
         function createCollapsibleSections(container) {
