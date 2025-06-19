@@ -329,19 +329,15 @@
             display: block;
         }
         
+        /* Emoji blockquote styling */
         .html-preview .emoji-blockquote {
             border-style: none;
             width: 100%;
             max-width: 560px;
             height: auto;
-            background-color: #ffe5b4;
+            background-color: #ffe5b4; /* peach background for emoji blockquote */
             border-radius: 8px;
             margin: 10px 0;
-        }
-
-        .html-preview .emoji-blockquote td {
-            padding: 20px;
-            border: none;
         }
 
         details {
@@ -435,7 +431,7 @@
                     <li>View the generated HTML code and preview.</li>
                     <li>Copy the HTML code to use in Chumbaka LMS.</li>
                 </ol><br>
-                <p>Source: <a href="https://boysbytes.github.io/cbk-markdown-to-html/" target=_blank>https://boysbytes.github.io/cbk-markdown-to-html/</a></p>
+                <p>Source: <a href="https://github.com/boysbytes/cbk-markdown-to-html" target="_blank">https://github.com/boysbytes/cbk-markdown-to-html</a></p>
             </div>
 
             <div class="converter-body">
@@ -471,46 +467,46 @@
         // CONFIGURATION BLOCK
         // =================================================================================
         const spacingConfig = {
-            // -- Default spacing if no specific rule is found --
-            "default": 1,
+            // Default spacing if no specific rule is found
+            "default": 0,
 
-            // -- Emoji blockcode to X --
+            // Emoji blockquote → X
             "emoji-blockquote_to_ol-l1": 3,
             "emoji-blockquote_to_ol-l2": 1,
             "emoji-blockquote_to_p": 1,
 
-            // -- Numbered list item (ol) to Numbered list item (ol) --
+            // Numbered list item → Numbered list item
             "ol-li-l1_to_ol-li-l1": 3,
             "ol-li-l1_to_ol-li-l2": 1,
             "ol-li-l2_to_ol-li-l2": 1,
             "ol-li-l2_to_ol-li-l1": 2,
 
-            // -- Bulleted list item (ul) to Bulleted list item (ul) --
+            // Bulleted list item → Bulleted list item
             "ul-li-l1_to_ul-li-l1": 1,
             "ul-li-l1_to_ul-li-l2": 1,
             "ul-li-l2_to_ul-li-l2": 1,
             "ul-li-l2_to_ul-li-l1": 1,
 
-            // -- Numbered list to X --
+            // Numbered list → Details
             "ol_to_details": 2,
 
-            // -- Sentence to X --
+            // Paragraph → X
             "p_to_image": 1,
             "p_to_details": 1,
 
-            // -- Image to X --
+            // Image → X
             "image_to_p": 1,
             "image_to_ol": 2,
             "image_to_emoji-blockquote": 2,
             "image_to_table": 2,
 
-            // -- Table to X --
+            // Table → X
             "table_to_ol": 1,
             "table_to_image": 2,
             "table_to_p": 1,
             "table_to_details": 2,
 
-            // -- Bullet list to X (Handles spacing AFTER a bulleted list ends) --
+            // End of bulleted list → X
             "ul_to_ol": 1,
             "ul_to_image": 1,
             "ul_to_table": 1,
@@ -518,8 +514,19 @@
             "ul_to_details": 1,
             "ul_to_emoji-blockquote": 2,
 
-            // -- Details to X --
+            // Details → Details
             "details_to_details": 3,
+
+            // Iframe → X
+            "iframe_to_image": 1,
+            "iframe_to_emoji-blockquote": 2,
+            "iframe_to_table": 2,
+            "iframe_to_ol-li-l1": 1,
+            "iframe_to_ol-li-l2": 1,
+            "iframe_to_ul-li-l1": 1,
+            "iframe_to_ul-li-l2": 1,
+            "iframe_to_iframe": 1,
+            "iframe_to_p": 1,
         };
 
 
@@ -568,10 +575,9 @@
         function processCustomMarkdown(html) {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = html;
-
-            processBlockquotes(tempDiv);
             createCollapsibleSections(tempDiv);
-            
+            processBlockquotes(tempDiv);
+
             applyCustomSpacing(tempDiv, spacingConfig);
 
             return tempDiv.innerHTML;
@@ -585,7 +591,7 @@
 
                 const text = firstParagraph.textContent.trim();
                 if (!text) return;
-                
+
                 const emojiMatch = /^(\p{Emoji}|\uFE0F)/u.exec(text);
 
                 if (emojiMatch) {
@@ -596,6 +602,8 @@
 
                     const table = document.createElement('table');
                     table.className = 'emoji-blockquote';
+                    // inline peach background so it appears in the HTML code tab
+                    table.style.backgroundColor = '#ffe5b4';
 
                     const tbody = document.createElement('tbody');
                     const tr = document.createElement('tr');
@@ -629,7 +637,7 @@
                 }
             });
         }
-        
+
         function getElementType(element) {
             if (!element || !element.tagName) return 'unknown';
             const tagName = element.tagName.toLowerCase();
@@ -652,47 +660,77 @@
             }
         }
 
-        function applyCustomSpacing(container, config) {
-            const children = Array.from(container.children);
-            
-            // --- Inter-element spacing (between p, table, ul, ol, etc.) ---
-            for (let i = 0; i < children.length - 1; i++) {
-                const currentElement = children[i];
-                const nextElement = children[i+1];
+function applyCustomSpacing(container, config) {
+    // Process top-level children
+    const children = Array.from(container.children);
+    for (let i = 0; i < children.length - 1; i++) {
+        const currentElement = children[i];
+        const nextElement = children[i+1];
+        const currentType = getElementType(currentElement);
+        const nextType = getElementType(nextElement);
+        const ruleKey = `${currentType}_to_${nextType}`;
+        const brCount = config[ruleKey] ?? config["default"] ?? 1;
+        if (brCount > 0) {
+            currentElement.insertAdjacentHTML('afterend', '<br>'.repeat(brCount));
+        }
+    }
 
+    // Process intra-list spacing (between li elements) and within li elements
+    const lists = container.querySelectorAll('ol, ul');
+    lists.forEach(list => {
+        const listType = list.tagName.toLowerCase();
+        const listItems = Array.from(list.children).filter(child => child.tagName === 'LI');
+
+        // Process spacing between li elements
+        for (let i = 0; i < listItems.length - 1; i++) {
+            const currentLi = listItems[i];
+            const nextLi = listItems[i + 1];
+            const currentLiLevel = currentLi.closest('ol, ul').parentElement.tagName === 'LI' ? 'l2' : 'l1';
+            const nextLiLevel = nextLi.closest('ol, ul').parentElement.tagName === 'LI' ? 'l2' : 'l1';
+            const ruleKey = `${listType}-li-${currentLiLevel}_to_${listType}-li-${nextLiLevel}`;
+            const brCount = config[ruleKey] ?? config["default"] ?? 1;
+            if (brCount > 0) {
+                currentLi.insertAdjacentHTML('beforeend', '<br>'.repeat(brCount));
+            }
+        }
+
+        // Process block-level children within each li
+        listItems.forEach(li => {
+            const blockElements = ['p', 'table', 'div', 'iframe', 'ul', 'ol', 'details', 'blockquote', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+            const blockChildren = Array.from(li.children).filter(child => {
+                const tagName = child.tagName.toLowerCase();
+                return blockElements.includes(tagName) ||
+                       (tagName === 'table' && child.classList.contains('emoji-blockquote'));
+            });
+
+            for (let i = 0; i < blockChildren.length - 1; i++) {
+                const currentElement = blockChildren[i];
+                const nextElement = blockChildren[i + 1];
                 const currentType = getElementType(currentElement);
                 const nextType = getElementType(nextElement);
-                
                 const ruleKey = `${currentType}_to_${nextType}`;
                 const brCount = config[ruleKey] ?? config["default"] ?? 1;
-
                 if (brCount > 0) {
-                    currentElement.insertAdjacentHTML('afterend', '<br>'.repeat(brCount));
-                }
-            }
-
-            // --- Intra-list spacing (between li elements) ---
-            const lists = container.querySelectorAll('ol, ul');
-            lists.forEach(list => {
-                const listType = list.tagName.toLowerCase(); 
-                const listItems = Array.from(list.children).filter(child => child.tagName === 'LI');
-
-                for (let i = 0; i < listItems.length - 1; i++) {
-                    const currentLi = listItems[i];
-                    const nextLi = listItems[i + 1];
-                    
-                    const currentLiLevel = currentLi.closest('ol, ul').parentElement.tagName === 'LI' ? 'l2' : 'l1';
-                    const nextLiLevel = nextLi.closest('ol, ul').parentElement.tagName === 'LI' ? 'l2' : 'l1';
-
-                    const ruleKey = `${listType}-li-${currentLiLevel}_to_${listType}-li-${nextLiLevel}`;
-                    const brCount = config[ruleKey] ?? config["default"] ?? 1;
-
-                    if (brCount > 0) {
-                        currentLi.insertAdjacentHTML('beforeend', '<br>'.repeat(brCount));
+                    // Check for existing br tags between currentElement and nextElement
+                    let node = currentElement.nextSibling;
+                    let existingBrCount = 0;
+                    while (node && node !== nextElement) {
+                        if (node.nodeType === Node.ELEMENT_NODE && node.tagName.toLowerCase() === 'br') {
+                            existingBrCount++;
+                        }
+                        node = node.nextSibling;
+                    }
+                    if (existingBrCount < brCount) {
+                        const additionalBrCount = brCount - existingBrCount;
+                        if (additionalBrCount > 0) {
+                            currentElement.insertAdjacentHTML('afterend', '<br>'.repeat(additionalBrCount));
+                        }
                     }
                 }
-            });
-        }
+            }
+        });
+    });
+}
 
 
         function createCollapsibleSections(container) {
