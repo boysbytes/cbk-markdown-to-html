@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Markdown to HTML Converter (Pyodide)</title>
-    <!-- Load Pyodide from CDN -->
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+    <title>Markdown to HTML Converter (JavaScript)</title>
+    <!-- Load marked.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         /* Existing CSS from your provided HTML */
         * {
@@ -252,6 +252,36 @@
             max-height: 400px;
             overflow-y: auto;
         }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-size: 1.2rem;
+            color: #333;
+            display: none; /* Changed from hidden to display:none */
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #28a745;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -311,192 +341,313 @@
     </div>
 
     <script type="text/javascript">
-    let pyodideReadyPromise;
-    let pyodide;
-    let convertMarkdownPython;
-    
-    async function loadPyodideAndPythonScript() {
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const mainContent = document.getElementById('main-content');
-        try {
-            // Load Pyodide
-            pyodide = await loadPyodide({
-                indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
+        // Simplified JavaScript version of the markdown to HTML converter
+        async function convertMarkdown() {
+            const input = document.getElementById('markdown-input').value;
+            const outputSection = document.getElementById('output-section');
+            const htmlOutput = document.getElementById('html-output');
+            const htmlPreview = document.getElementById('html-preview');
+            const convertBtn = document.querySelector('.convert-btn');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const mainContent = document.getElementById('main-content');
+
+            if (!input.trim()) {
+                alert('Please enter some Markdown content to convert.');
+                return;
+            }
+
+            // Show loading overlay
+            loadingOverlay.style.display = 'flex';
+            mainContent.style.display = 'none';
+
+            // Disable button during conversion
+            convertBtn.disabled = true;
+            convertBtn.textContent = 'Converting...';
+
+            htmlOutput.textContent = 'Converting...';
+            htmlPreview.innerHTML = 'Converting...';
+
+            try {
+                // Convert markdown to HTML using marked.js
+                let html = marked.parse(input);
+
+                // Process with custom functions
+                html = processCustomMarkdown(html);
+
+                htmlOutput.textContent = html;
+                htmlPreview.innerHTML = html;
+                outputSection.classList.add('show');
+                outputSection.scrollIntoView({ behavior: 'smooth' });
+            } catch (error) {
+                console.error('Conversion error:', error);
+                const errorMessage = `Error converting Markdown: ${error.message}`;
+                htmlOutput.textContent = errorMessage;
+                htmlPreview.innerHTML = `<div class="error-message">${errorMessage}</div>`;
+            } finally {
+                // Hide loading overlay
+                loadingOverlay.style.display = 'none';
+                mainContent.style.display = 'block';
+
+                // Re-enable button
+                convertBtn.disabled = false;
+                convertBtn.textContent = 'Convert to HTML';
+            }
+        }
+
+        // This function replicates some of the custom processing from the Python code
+        function processCustomMarkdown(html) {
+            // Create a temporary div to parse the HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+
+            // Process blockquotes with emojis
+            processBlockquotes(tempDiv);
+
+            // Add spacing elements
+            addSpacingElements(tempDiv);
+
+            // Process list spacing
+            processListSpacing(tempDiv);
+
+            // Create collapsible sections
+            createCollapsibleSections(tempDiv);
+
+            return tempDiv.innerHTML;
+        }
+
+        function processBlockquotes(container) {
+            const blockquotes = container.querySelectorAll('blockquote');
+            blockquotes.forEach(blockquote => {
+                const firstParagraph = blockquote.querySelector('p');
+                if (!firstParagraph) return;
+
+                // Get the first character to check for emoji
+                const text = firstParagraph.textContent.trim();
+                if (!text) return;
+
+                // Simple emoji detection
+                const emojiMatch = /^(\p{Emoji}|\uFE0F)/u.exec(text);
+                if (emojiMatch) {
+                    const emoji = emojiMatch[0];
+                    const content = blockquote.innerHTML.replace(emoji, '').trim();
+
+                    // Create a styled table
+                    const table = document.createElement('table');
+                    table.style.borderStyle = 'none';
+                    table.style.width = '100%';
+                    table.style.maxWidth = '560px';
+                    table.style.height = 'auto';
+                    table.style.backgroundColor = '#ffe5b4';
+                    table.style.borderRadius = '8px';
+                    table.style.margin = '10px 0';
+
+                    const tbody = document.createElement('tbody');
+                    const tr = document.createElement('tr');
+
+                    // Icon cell
+                    const tdIcon = document.createElement('td');
+                    tdIcon.style.width = '70px';
+                    tdIcon.style.verticalAlign = 'top';
+                    tdIcon.style.textAlign = 'center';
+
+                    const h3Icon = document.createElement('h3');
+                    h3Icon.style.margin = '0';
+
+                    const spanIcon = document.createElement('span');
+                    spanIcon.style.fontSize = '36pt';
+                    spanIcon.style.lineHeight = '1';
+                    spanIcon.textContent = emoji;
+
+                    h3Icon.appendChild(spanIcon);
+                    tdIcon.appendChild(h3Icon);
+
+                    // Content cell
+                    const tdText = document.createElement('td');
+                    tdText.style.verticalAlign = 'top';
+
+                    const pText = document.createElement('div');
+                    pText.style.margin = '0';
+                    pText.innerHTML = content;
+
+                    tdText.appendChild(pText);
+
+                    tr.appendChild(tdIcon);
+                    tr.appendChild(tdText);
+                    tbody.appendChild(tr);
+                    table.appendChild(tbody);
+
+                    // Replace the blockquote with our table
+                    blockquote.parentNode.replaceChild(table, blockquote);
+                }
             });
-    
-            // Load required packages (markdown and beautifulsoup4)
-            loadingOverlay.querySelector('p').textContent = "Installing Python dependencies...";
-            await pyodide.loadPackage("markdown");
-            await pyodide.loadPackage("beautifulsoup4");
-    
-            // Define the Python markdown conversion function
-            const pythonScriptContent = `
-    import markdown
-    from bs4 import BeautifulSoup, NavigableString
-    import re
-    from typing import Tuple, Optional
-    
-    EMOJI_PATTERN = re.compile(
-        r'[\\U0001F600-\\U0001F64F'
-        r'\\U0001F300-\\U0001F5FF'
-        r'\\U0001F680-\\U0001F6FF'
-        r'\\U0001F1E0-\\U0001F1FF'
-        r'\\U00002600-\\U000026FF'
-        r'\\U00002700-\\U000027BF'
-        r'\\U0001F900-\\U0001F9FF'
-        r'\\U0001FA70-\\U0001FAFF]', flags=re.UNICODE
-    )
-    
-    def extract_emoji_and_clean_text(paragraph) -> Tuple[Optional[str], str]:
-        if not paragraph:
-            return None, ""
-        text = paragraph.get_text(strip=True)
-        if not text or not EMOJI_PATTERN.match(text):
-            return None, paragraph.decode_contents().strip('\\n')
-        emoji = text[0]
-        for child in paragraph.contents:
-            if isinstance(child, NavigableString):
-                stripped = child.lstrip()
-                if stripped and EMOJI_PATTERN.match(stripped):
-                    new_text = child.replace(stripped[0], '', 1)
-                    child.replace_with(new_text)
-                    break
-        return emoji, paragraph.decode_contents().strip('\\n')
-    
-    def create_styled_table(soup, icon: str, content_html: str):
-        table = soup.new_tag(
-            'table',
-            style="border-style: none; width: 100%; max-width: 560px; height: auto; "
-                  "background-color: #ffe5b4; border-radius: 8px; margin: 10px 0;",
-            border="0",
-            cellpadding="20"
-        )
-        tbody = soup.new_tag('tbody')
-        tr = soup.new_tag('tr')
-        td_icon = soup.new_tag(
-            'td', 
-            style="width: 70px; vertical-align: top; text-align: center;"
-        )
-        h3_icon = soup.new_tag('h3', style="margin: 0;")
-        span_icon = soup.new_tag('span', style="font-size: 36pt; line-height: 1;")
-        span_icon.string = icon.strip()
-        h3_icon.append(span_icon)
-        td_icon.append(h3_icon)
-        td_text = soup.new_tag('td', style="vertical-align: top;")
-        p_text = soup.new_tag('p', style="margin: 0;")
-        try:
-            content_soup = BeautifulSoup(content_html, 'html.parser')
-            for content in content_soup.contents:
-                p_text.append(content)
-        except Exception as e:
-            p_text.string = content_html
-        td_text.append(p_text)
-        tr.append(td_icon)
-        tr.append(td_text)
-        tbody.append(tr)
-        table.append(tbody)
-        return table
-    
-    def process_blockquotes(soup) -> None:
-        blockquotes = soup.find_all('blockquote')
-        for blockquote in blockquotes:
-            try:
-                first_paragraph = blockquote.find('p')
-                icon = None
-                text_content_html = ""
-                if first_paragraph:
-                    icon, text_content_html = extract_emoji_and_clean_text(first_paragraph)
-                if not icon:
-                    full_text = blockquote.get_text(strip=True)
-                    if full_text and EMOJI_PATTERN.match(full_text):
-                        icon = full_text[0]
-                        text_content_html = blockquote.decode_contents().strip('\\n')
-                    else:
-                        continue
-                if not text_content_html:
-                    text_content_html = blockquote.decode_contents().strip('\\n')
-                table = create_styled_table(soup, icon, text_content_html)
-                blockquote.replace_with(table)
-            except Exception as e:
-                print(f"Error processing blockquote: {e}")
-    
-    def add_spacing_elements(soup) -> None:
-        for iframe in soup.find_all('iframe'):
-            next_sibling = iframe.next_sibling
-            if next_sibling and hasattr(next_sibling, 'name') and next_sibling.name in ['blockquote', 'table']:
-                iframe.insert_after(soup.new_tag('br'))
-        for img in soup.find_all('img'):
-            prev_sibling = img.previous_sibling
-            if prev_sibling and hasattr(prev_sibling, 'name') and prev_sibling.name in ['blockquote', 'table']:
-                img.insert_before(soup.new_tag('br'))
-    
-    def markdown_to_html(md_text: str) -> str:
-        html = markdown.markdown(md_text, extensions=['extra', 'sane_lists', 'smarty'])
-        soup = BeautifulSoup(html, 'html.parser')
-        process_blockquotes(soup)
-        add_spacing_elements(soup)
-        return str(soup)
-    
-    def convert_markdown(md_text: str) -> str:
-        return markdown_to_html(md_text)
-    `;
-    
-            await pyodide.runPythonAsync(pythonScriptContent);
-    
-            // Expose the Python conversion function to JS
-            convertMarkdownPython = (mdText) => {
-                return pyodide.runPython(`convert_markdown("""${mdText.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/"/g, '\\"').replace(/\r?\n/g, '\\n')}""")`);
-            };
-    
-            // Hide loading and show main content
-            loadingOverlay.classList.add('hidden');
-            mainContent.style.display = '';
-        } catch (err) {
-            loadingOverlay.querySelector('p').textContent = "Failed to load Python environment or dependencies.";
-            console.error(err);
         }
-    }
-    
-    pyodideReadyPromise = loadPyodideAndPythonScript();
-    
-    async function convertMarkdown() {
-        const btn = document.querySelector('.convert-btn');
-        btn.disabled = true;
-        const input = document.getElementById('markdown-input').value;
-        const outputSection = document.getElementById('output-section');
-        const htmlOutput = document.getElementById('html-output');
-        const htmlPreview = document.getElementById('html-preview');
-        try {
-            await pyodideReadyPromise;
-            const html = convertMarkdownPython(input);
-            htmlOutput.textContent = html;
-            htmlPreview.innerHTML = html;
-            outputSection.classList.add('show');
-        } catch (e) {
-            htmlOutput.textContent = "Error: " + e;
-            htmlPreview.innerHTML = "";
-            outputSection.classList.add('show');
+
+        function addSpacingElements(container) {
+            // Add spacing after iframes
+            const iframes = container.querySelectorAll('iframe');
+            iframes.forEach(iframe => {
+                const nextSibling = iframe.nextElementSibling;
+                if (nextSibling && (nextSibling.tagName === 'BLOCKQUOTE' ||
+                                    nextSibling.tagName === 'TABLE')) {
+                    iframe.insertAdjacentHTML('afterend', '<br>');
+                }
+            });
+
+            // Add spacing before images
+            const images = container.querySelectorAll('img');
+            images.forEach(img => {
+                const prevSibling = img.previousElementSibling;
+                if (prevSibling && (prevSibling.tagName === 'P' ||
+                                    prevSibling.tagName === 'SPAN')) {
+                    img.insertAdjacentHTML('beforebegin', '<br>');
+                }
+            });
         }
-        btn.disabled = false;
-    }
-    
-    function showTab(evt, tabId) {
-        const tabBtns = document.querySelectorAll('.tab-btn');
-        const tabContents = document.querySelectorAll('.tab-content');
-        tabBtns.forEach(btn => btn.classList.remove('active'));
-        tabContents.forEach(tab => tab.classList.remove('active'));
-        evt.currentTarget.classList.add('active');
-        document.getElementById(tabId).classList.add('active');
-    }
-    
-    function copyToClipboard() {
-        const htmlOutput = document.getElementById('html-output');
-        navigator.clipboard.writeText(htmlOutput.textContent).then(() => {
-            const success = document.getElementById('copy-success');
-            success.classList.add('show');
-            setTimeout(() => success.classList.remove('show'), 1500);
+
+        function processListSpacing(container) {
+            const listItems = container.querySelectorAll('li');
+            listItems.forEach((item, index, items) => {
+                const isTopLevelOrdered = (item.closest('ol') && !item.closest('li'));
+                const hasChildren = item.querySelector('ol, ul') !== null;
+
+                let isFollowedByTopLevel = false;
+                if (index + 1 < items.length) {
+                    const nextItem = items[index + 1];
+                    isFollowedByTopLevel = nextItem.closest('ol') && !nextItem.closest('li');
+                }
+
+                let brTags = '';
+                if (isTopLevelOrdered && isFollowedByTopLevel) {
+                    brTags = "<br><br><br><br>";
+                } else if (hasChildren) {
+                    brTags = "<br>";
+                } else if (isFollowedByTopLevel) {
+                    brTags = "<br><br><br><br>";
+                }
+
+                if (brTags) {
+                    item.insertAdjacentHTML('beforeend', brTags);
+                }
+            });
+        }
+
+        function createCollapsibleSections(container) {
+            // This is a simplified version of the Python implementation
+            // Create a temporary div to hold our processed content
+            const tempDiv = document.createElement('div');
+
+            // Collect all elements
+            const allElements = Array.from(container.children);
+            let currentSectionContent = [];
+            let currentHeading = null;
+
+            // Process each element
+            allElements.forEach(element => {
+                if (element.tagName === 'H3') {
+                    // If we have a current heading and content, add them to the temp div
+                    if (currentHeading) {
+                        addSectionToTempDiv(tempDiv, currentHeading, currentSectionContent);
+                    }
+
+                    // Start a new section
+                    currentHeading = element;
+                    currentSectionContent = [];
+                } else {
+                    // If we have a heading but no content array, create it
+                    if (currentHeading && !currentSectionContent) {
+                        currentSectionContent = [];
+                    }
+                    if (currentHeading || currentSectionContent.length > 0) {
+                        currentSectionContent.push(element);
+                    }
+                }
+            });
+
+            // Add the last section if it exists
+            if (currentHeading) {
+                addSectionToTempDiv(tempDiv, currentHeading, currentSectionContent);
+            } else if (currentSectionContent.length > 0) {
+                // If there's content but no heading, just add it as is
+                currentSectionContent.forEach(el => tempDiv.appendChild(el.cloneNode(true)));
+            }
+
+            // Replace the container's content with our processed content
+            container.innerHTML = '';
+            while (tempDiv.firstChild) {
+                container.appendChild(tempDiv.firstChild);
+            }
+        }
+
+        function addSectionToTempDiv(tempDiv, heading, contentElements) {
+            const detailsBlock = document.createElement('details');
+            detailsBlock.open = true; // Make sections open by default
+
+            const summaryBlock = document.createElement('summary');
+            summaryBlock.style.padding = '15px';
+            summaryBlock.style.marginBottom = '25px';
+            summaryBlock.style.cursor = 'pointer';
+            summaryBlock.style.backgroundColor = '#f9f7f0';
+            summaryBlock.style.borderRadius = '5px';
+            summaryBlock.style.fontWeight = 'bold';
+
+            const headingText = heading.textContent.trim();
+            const strongHeading = document.createElement('strong');
+            strongHeading.textContent = headingText;
+            summaryBlock.appendChild(strongHeading);
+            detailsBlock.appendChild(summaryBlock);
+
+            // Add content elements
+            contentElements.forEach(element => {
+                if (element) {
+                    detailsBlock.appendChild(element.cloneNode(true));
+                }
+            });
+
+            tempDiv.appendChild(detailsBlock);
+        }
+
+        function showTab(event, tabName) {
+            event.preventDefault();
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        async function copyToClipboard() {
+            const htmlOutput = document.getElementById('html-output').textContent;
+            const copySuccess = document.getElementById('copy-success');
+            try {
+                await navigator.clipboard.writeText(htmlOutput);
+                copySuccess.classList.add('show');
+                setTimeout(() => {
+                    copySuccess.classList.remove('show');
+                }, 2000);
+            } catch (err) {
+                console.error('Error copying to clipboard:', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = htmlOutput;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    copySuccess.classList.add('show');
+                    setTimeout(() => {
+                        copySuccess.classList.remove('show');
+                    }, 2000);
+                } catch (fallbackErr) {
+                    alert('Could not copy to clipboard. Please select and copy manually.');
+                }
+                document.body.removeChild(textArea);
+            }
+        }
+
+        // Show the main content and hide loading overlay when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('loading-overlay').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
         });
-    }
     </script>
 </body>
 </html>
