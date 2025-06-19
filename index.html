@@ -587,13 +587,13 @@ Here's some text that might be followed by an image.
                 pyodide.FS.writeFile('converter_script.py', pythonScriptContent);
                 console.log("Python script written to Pyodide FS.");
 
-                // Import your Python script and get the function
+                // Import your Python script inside Pyodide
                 await pyodide.runPythonAsync(`
                     import converter_script
-                    # Make the Python function accessible from JavaScript
-                    pyodide.globals.set("convertMarkdownPython", converter_script.convert_markdown_to_html)
                 `);
-                convertMarkdownPython = pyodide.globals.get('convertMarkdownPython');
+                
+                // Get the Python function and make it accessible from JavaScript
+                convertMarkdownPython = pyodide.globals.get("converter_script").convert_markdown_to_html;
                 console.log("Python conversion function ready.");
 
                 loadingOverlay.classList.add('hidden');
