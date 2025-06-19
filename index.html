@@ -202,37 +202,55 @@
             color: #333;
         }
 
-        /* Styling for loading overlay */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
+        /* Styling for custom blockquote tables */
+        table {
+            border-style: none;
             width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            z-index: 1000;
-            font-size: 1.2rem;
-            color: #333;
+            max-width: 560px;
+            height: auto;
+            background-color: #ffe5b4;
+            border-radius: 8px;
+            margin: 10px 0;
         }
-        .loading-spinner {
-            border: 8px solid #f3f3f3;
-            border-top: 8px solid #3498db;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            animation: spin 1s linear infinite;
+
+        table td {
+            padding: 20px;
+        }
+
+        table td h3 {
+            margin: 0;
+        }
+
+        table td p {
+            margin: 0;
+        }
+
+        /* Collapsible section styling */
+        details {
             margin-bottom: 20px;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+
+        summary {
+            padding: 15px;
+            margin-bottom: 25px;
+            cursor: pointer;
+            background-color: #f9f7f0;
+            border-radius: 5px;
+            font-weight: bold;
         }
-        .hidden {
-            display: none !important;
+
+        summary:hover {
+            background-color: #e0e0e0;
+        }
+
+        /* Styling for the markdown output preview */
+        .html-preview {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
         }
     </style>
 </head>
@@ -317,17 +335,239 @@
                 `);
                 console.log("Python dependencies installed.");
 
-                // Inline Python script content
                 const pythonScriptContent = `
 import markdown2
 from bs4 import BeautifulSoup
 def convert_markdown_to_html(markdown_text: str) -> str:
     html_text = markdown2.markdown(markdown_text, extras=['fenced-code-blocks', 'tables', 'break-on-newline'])
     soup = BeautifulSoup(html_text, 'html.parser')
-    return str(soup)
-`;
+    # Custom transformations
 
-                await pyodide.runPythonAsync(pythonScriptContent);
+    const pythonScriptContent = `
+    import markdown2
+    from bs4 import BeautifulSoup, NavigableString
+    import re
+    
+    # Enhanced emoji pattern to cover more Unicode ranges
+    EMOJI_PATTERN = re.compile(
+        r'[\U0001F600-\U0001F64F'  # emoticons
+        r'\U0001F300-\U0001F5FF'   # symbols & pictographs
+        r'\U0001F680-\U0001F6FF'   # transport & map
+        r'\U0001F1E0-\U0001F1FF'   # flags (iOS)
+        r'\U00002600-\U000026FF'   # miscellaneous symbols
+        r'\U00002700-\U000027BF'   # dingbats
+        r'\U0001F900-\U0001F9FF'   # supplemental symbols
+        r'\U0001FA70-\U0001FAFF]', # symbols and pictographs extended-A
+        flags=re.UNICODE
+    )
+    
+    # Extracts the leading emoji from a paragraph and removes it
+    def extract_emoji_and_clean_text(paragraph) -> Tuple[Optional[str], str]:
+        if not paragraph:
+            return None, ""
+            
+        text = paragraph.get_text(strip=True)
+        if not text or not EMOJI_PATTERN.match(text):
+            return None, paragraph.decode_contents().strip('\\n')
+    
+        emoji = text[0]
+        
+        for child in paragraph.contents:
+            if isinstance(child, NavigableString):
+                stripped = child.lstrip()
+                if stripped and EMOJI_PATTERN.match(stripped):
+                    new_text = child.replace(stripped[0], '', 1)
+                    child.replace_with(new_text)
+                    break
+                    
+        return emoji, paragraph.decode_contents().strip('\\n')
+    
+    # Creates a styled table with an emoji and content
+    def create_styled_table(soup, icon: str, content_html: str):
+        table = soup.new_tag(
+            'table',
+            style="border-style: none; width: 100%; max-width: 560px; height: auto; "
+                  "background-color: #ffe5b4; border-radius: 8px; margin: 10px 0;",
+            border="0",
+            cellpadding="20"
+        )
+        tbody = soup.new_tag('tbody')
+        tr = soup.new_tag('tr')
+    
+        td_icon = soup.new_tag(
+            'td', 
+            style="width: 70px; vertical-align: top; text-align: center;"
+        )
+        h3_icon = soup.new_tag('h3', style="margin: 0;")
+        span_icon = soup.new_tag('span', style="font-size: 36pt; line-height: 1;")
+        span_icon.string = icon.strip()
+        h3_icon.append(span_icon)
+        td_icon.append(h3_icon)
+    
+        td_text = soup.new_tag('td', style="vertical-align: top;")
+        p_text = soup.new_tag('p', style="margin: 0;")
+        
+        try:
+            content_soup = BeautifulSoup(content_html, 'html.parser')
+            for content in content_soup.contents:
+                p_text.append(content)
+        except Exception as e:
+            p_text.string = content_html
+            
+        td_text.append(p_text)
+    
+        tr.append(td_icon)
+        tr.append(td_text)
+        tbody.append(tr)
+        table.append(tbody)
+        
+        return table
+    
+    # Convert emoji-prefixed blockquotes to styled tables
+    def process_blockquotes(soup) -> None:
+        blockquotes = soup.find_all('blockquote')
+        
+        for blockquote in blockquotes:
+            try:
+                first_paragraph = blockquote.find('p')
+                icon = None
+                text_content_html = ""
+                
+                if first_paragraph:
+                    icon, text_content_html = extract_emoji_and_clean_text(first_paragraph)
+                
+                if not icon:
+                    full_text = blockquote.get_text(strip=True)
+                    if full_text and EMOJI_PATTERN.match(full_text):
+                        icon = full_text[0]
+                        text_content_html = blockquote.decode_contents().strip('\\n')
+                    else:
+                        continue
+    
+                if not text_content_html:
+                    text_content_html = blockquote.decode_contents().strip('\\n')
+                
+                table = create_styled_table(soup, icon, text_content_html)
+                blockquote.replace_with(table)
+            except Exception as e:
+                print(f"Error processing blockquote: {e}")
+    
+    # Add spacing elements between different HTML elements
+    def add_spacing_elements(soup) -> None:
+        for iframe in soup.find_all('iframe'):
+            next_sibling = iframe.next_sibling
+            if next_sibling and hasattr(next_sibling, 'name') and next_sibling.name in ['blockquote', 'table']:
+                iframe.insert_after(soup.new_tag('br'))
+    
+        for img in soup.find_all('img'):
+            prev_sibling = img.previous_sibling
+            if prev_sibling and hasattr(prev_sibling, 'name') and prev_sibling.name in ['p', 'span']:
+                img.insert_before(soup.new_tag('br'))
+    
+    # Add appropriate spacing between list items
+    def process_list_spacing(soup) -> None:
+        list_items = soup.find_all('li')
+        
+        for i, item in enumerate(list_items):
+            try:
+                is_top_level_ordered = (item.find_parent('ol') and not item.find_parent('li'))
+                has_children = bool(item.find('ol') or item.find('ul'))
+                
+                is_followed_by_top_level = False
+                if i + 1 < len(list_items):
+                    next_item = list_items[i + 1]
+                    if next_item.find_parent('details') == item.find_parent('details'):
+                        is_followed_by_top_level = bool(
+                            next_item.find_parent('ol') and not next_item.find_parent('li')
+                        )
+    
+                br_tags = ""
+                if is_top_level_ordered and is_followed_by_top_level:
+                    br_tags = "<br><br><br><br>"
+                elif has_children:
+                    br_tags = "<br>"
+                elif is_followed_by_top_level:
+                    br_tags = "<br><br><br><br>"
+    
+                if br_tags:
+                    br_element = BeautifulSoup(br_tags, 'html.parser')
+                    for br in br_element:
+                        item.append(br)
+                        
+            except Exception as e:
+                print(f"Error processing list item spacing: {e}")
+    
+    # Create collapsible sections from <h3> headings and following content
+    def create_collapsible_sections(soup):
+        div_wrapper = soup.new_tag('div')
+        current_section_content = []
+        heading = None
+        
+        body_elements = list(soup.children)
+        sections_data = []
+        
+        for element in body_elements:
+            if hasattr(element, 'name') and element.name == 'h3':
+                if current_section_content or heading:
+                    sections_data.append({
+                        'heading': heading,
+                        'content': current_section_content
+                    })
+                heading = element
+                current_section_content = []
+            else:
+                current_section_content.append(element)
+        
+        if current_section_content or heading:
+            sections_data.append({
+                'heading': heading,
+                'content': current_section_content
+            })
+    
+        for section_data in sections_data:
+            details_block = soup.new_tag('details')
+            details_block['open'] = True  # Make sections open by default
+            
+            summary_block = soup.new_tag(
+                'summary',
+                style=( "padding: 15px; margin-bottom: 25px; cursor: pointer; "
+                        "background-color: #f9f7f0; border-radius: 5px; font-weight: bold;")
+            )
+            
+            heading_text = ""
+            if section_data['heading']:
+                heading_text = section_data['heading'].get_text(strip=True)
+            
+            strong_heading = soup.new_tag('strong')
+            strong_heading.string = heading_text
+            summary_block.append(strong_heading)
+            details_block.append(summary_block)
+            
+            for content_element in section_data['content']:
+                if content_element:
+                    details_block.append(content_element)
+            
+            div_wrapper.append(details_block)
+        
+        return str(div_wrapper)
+    
+    # Main function to convert Markdown to HTML with custom styling
+    def convert_markdown_to_html(markdown_text: str) -> str:
+        html_text = markdown2.markdown(
+            markdown_text,
+            extras=['fenced-code-blocks', 'tables', 'break-on-newline']
+        )
+        soup = BeautifulSoup(html_text, 'html.parser')
+        
+        process_blockquotes(soup)
+        add_spacing_elements(soup)
+        process_list_spacing(soup)
+        
+        return create_collapsible_sections(soup)
+    `;
+    
+    await pyodide.runPythonAsync(pythonScriptContent);
+
 
                 convertMarkdownPython = pyodide.globals.get("convert_markdown_to_html");
                 console.log("Python conversion function ready.");
