@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Markdown to HTML Converter (Pyodide)</title>
+    <!-- Load Pyodide from CDN -->
     <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
     <style>
         /* Existing CSS from your provided HTML */
@@ -513,3 +514,188 @@ Content for the first collapsible section.
 
 ```javascript
 console.log('Hello, World!');
+```
+
+### Collapsible Section Title 2
+More content for another collapsible section.
+This could be a paragraph.
+
+<iframe width='560' height='315' src='https://www.youtube.com/embed/dQw4w9WgXcQ' frameborder='0' allowfullscreen></iframe>
+
+Here's some text that might be followed by an image.
+<img src='https://via.placeholder.com/150' alt='Placeholder Image'>
+"
+                    ></textarea>
+                </div>
+
+                <button class="convert-btn" onclick="convertMarkdown()">
+                    Convert to HTML
+                </button>
+
+                <div id="output-section" class="output-section">
+                    <div class="output-tabs">
+                        <button class="tab-btn active" onclick="showTab('html-code')">HTML Code</button>
+                        <button class="tab-btn" onclick="showTab('preview')">Preview</button>
+                    </div>
+
+                    <div id="html-code" class="tab-content active">
+                        <button class="copy-btn" onclick="copyToClipboard()">Copy HTML</button>
+                        <span class="copy-success" id="copy-success">Copied!</span>
+                        <div id="html-output" class="html-output"></div>
+                    </div>
+
+                    <div id="preview" class="tab-content">
+                        <div id="html-preview" class="html-preview"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        let pyodideReadyPromise;
+        let convertMarkdownPython; // This will hold our Python function
+
+        async function loadPyodideAndPythonScript() {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const mainContent = document.getElementById('main-content');
+            
+            try {
+                // Initialize Pyodide
+                console.log("Loading Pyodide...");
+                pyodide = await loadPyodide({
+                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
+                });
+                console.log("Pyodide loaded.");
+
+                // Load required Python packages (markdown2 and beautifulsoup4)
+                loadingOverlay.querySelector('p').textContent = "Installing Python dependencies...";
+                await pyodide.loadPackage("micropip"); // micropip is needed to install other packages
+                await pyodide.runPythonAsync(`
+                    import micropip
+                    await micropip.install("markdown2")
+                    await micropip.install("beautifulsoup4")
+                `);
+                console.log("Python dependencies installed.");
+
+                // Fetch your Python script from the same directory
+                loadingOverlay.querySelector('p').textContent = "Loading your Python script...";
+                const pythonScriptResponse = await fetch('converter_script.py');
+                const pythonScriptContent = await pythonScriptResponse.text();
+
+                // Write the Python script into Pyodide's virtual file system
+                pyodide.FS.writeFile('converter_script.py', pythonScriptContent);
+                console.log("Python script written to Pyodide FS.");
+
+                // Import your Python script and get the function
+                await pyodide.runPythonAsync(`
+                    import converter_script
+                    # Make the Python function accessible from JavaScript
+                    pyodide.globals.set("convertMarkdownPython", converter_script.convert_markdown_to_html)
+                `);
+                convertMarkdownPython = pyodide.globals.get('convertMarkdownPython');
+                console.log("Python conversion function ready.");
+
+                loadingOverlay.classList.add('hidden');
+                mainContent.style.display = 'block';
+                // Auto-convert on page load if there's placeholder content
+                const input = document.getElementById('markdown-input');
+                if (input.value.trim()) {
+                    convertMarkdown();
+                }
+
+            } catch (error) {
+                console.error("Failed to load Pyodide or Python script:", error);
+                loadingOverlay.innerHTML = `<div style="color: red;">Error loading the application. Check console for details.</div><p>${error.message}</p>`;
+            }
+        }
+
+        // Initialize Pyodide and load the Python script when the page loads
+        pyodideReadyPromise = loadPyodideAndPythonScript();
+
+
+        async function convertMarkdown() {
+            const input = document.getElementById('markdown-input').value;
+            const outputSection = document.getElementById('output-section');
+            const htmlOutput = document.getElementById('html-output');
+            const htmlPreview = document.getElementById('html-preview');
+
+            if (!input.trim()) {
+                alert('Please enter some Markdown content to convert.');
+                return;
+            }
+
+            htmlOutput.textContent = 'Converting...';
+            htmlPreview.innerHTML = 'Converting...';
+
+            try {
+                // Ensure Pyodide and the Python script are loaded
+                await pyodideReadyPromise;
+
+                if (!convertMarkdownPython) {
+                    throw new Error("Python conversion function not loaded.");
+                }
+
+                // Call the Python function from JavaScript
+                const html = await convertMarkdownPython(input);
+
+                // Show the HTML code
+                htmlOutput.textContent = html;
+                
+                // Show the preview
+                htmlPreview.innerHTML = html;
+                
+                // Show the output section
+                outputSection.classList.add('show');
+                
+                // Scroll to output
+                outputSection.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) {
+                alert('Error converting Markdown: ' + error.message + '. See console for details.');
+                console.error('Conversion error:', error);
+                htmlOutput.textContent = `Error: ${error.message}`;
+                htmlPreview.innerHTML = `<p style="color: red;">Error converting Markdown: ${error.message}</p>`;
+            }
+        }
+
+        function showTab(tabName) {
+            // Remove active class from all tabs and content
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding content
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        async function copyToClipboard() {
+            const htmlOutput = document.getElementById('html-output').textContent;
+            const copySuccess = document.getElementById('copy-success');
+            
+            try {
+                await navigator.clipboard.writeText(htmlOutput);
+                copySuccess.classList.add('show');
+                setTimeout(() => {
+                    copySuccess.classList.remove('show');
+                }, 2000);
+            } catch (err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = htmlOutput;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                copySuccess.classList.add('show');
+                setTimeout(() => {
+                    copySuccess.classList.remove('show');
+                }, 2000);
+            }
+        }
+
+        // The auto-convert on page load is now handled by loadPyodideAndPythonScript after setup
+    </script>
+</body>
+</html>
