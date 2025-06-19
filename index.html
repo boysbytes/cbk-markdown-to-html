@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Markdown to HTML Converter (JavaScript)</title>
-    <!-- Load marked.js from CDN -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         /* Existing CSS from your provided HTML */
@@ -128,13 +127,21 @@
             border-radius: 5px;
             cursor: pointer;
             transition: background 0.3s ease;
-            display: block;
-            margin: 20px auto;
+            /* Removed display: block; and margin: 20px auto; from here */
             font-size: 1rem;
         }
 
         .convert-btn:hover {
             background: #218838;
+        }
+
+        /* Styling for the copy button to match the convert button */
+        .copy-btn {
+            /* Inherits most styles from .convert-btn */
+            /* Ensure it's inline-block to sit next to text/span */
+            display: inline-block;
+            margin-top: 10px;
+            margin-bottom: 10px;
         }
 
         .output-section {
@@ -190,6 +197,7 @@
             color: #495057;
         }
 
+        /* Styling for the markdown output preview - IMPROVED */
         .html-preview {
             border: 1px solid #e9ecef;
             border-radius: 10px;
@@ -200,7 +208,104 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
             color: #333;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* subtle shadow */
         }
+
+        .html-preview h1, .html-preview h2, .html-preview h3, .html-preview h4, .html-preview h5, .html-preview h6 {
+            color: #1f2328;
+            margin-top: 1.5em;
+            margin-bottom: 0.8em;
+            line-height: 1.2;
+            font-weight: 600;
+        }
+
+        .html-preview h1 { font-size: 2.2em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+        .html-preview h2 { font-size: 1.8em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+        .html-preview h3 { font-size: 1.5em; }
+        .html-preview h4 { font-size: 1.2em; }
+        .html-preview h5 { font-size: 1em; }
+        .html-preview h6 { font-size: 0.9em; color: #6a737d; }
+
+        .html-preview p {
+            margin-bottom: 1em;
+            color: #333;
+        }
+
+        .html-preview ul, .html-preview ol {
+            margin: 0 0 1em 2em;
+            padding: 0;
+        }
+
+        .html-preview ul li, .html-preview ol li {
+            margin-bottom: 0.5em;
+        }
+
+        .html-preview a {
+            color: #0366d6;
+            text-decoration: none;
+        }
+
+        .html-preview a:hover {
+            text-decoration: underline;
+        }
+
+        .html-preview code {
+            font-family: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-size: 0.85em;
+            color: #36454F;
+        }
+
+        .html-preview pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            padding: 1em;
+            overflow-x: auto;
+            margin-bottom: 1em;
+        }
+
+        .html-preview pre code {
+            background-color: transparent;
+            padding: 0;
+            font-size: 1em;
+            color: #36454F;
+        }
+
+        .html-preview blockquote {
+            border-left: 0.25em solid #dfe2e5;
+            color: #6a737d;
+            padding: 0 1em;
+            margin: 0 0 1em;
+        }
+
+        .html-preview table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1em;
+            background-color: #ffffff; /* This will be overridden by the custom table style for blockquotes */
+            border-radius: 8px; /* This will be overridden for custom blockquote tables */
+        }
+
+        .html-preview th, .html-preview td {
+            border: 1px solid #dfe2e5;
+            padding: 0.6em 1em;
+            text-align: left;
+        }
+
+        .html-preview th {
+            background-color: #f6f8fa;
+            font-weight: 600;
+        }
+        
+        .html-preview img {
+            max-width: 100%;
+            height: auto;
+            display: block; /* Ensures images behave like blocks for margin */
+            margin: 1em 0; /* Add some vertical spacing around images */
+        }
+
 
         /* Styling for custom blockquote tables */
         table {
@@ -243,16 +348,6 @@
             background-color: #e0e0e0;
         }
 
-        /* Styling for the markdown output preview */
-        .html-preview {
-            background: #f9f9f9;
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 20px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -282,18 +377,34 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Added for Copy Success message */
+        .copy-success {
+            display: inline-block; /* Make it sit next to the button */
+            margin-left: 10px;
+            font-size: 0.9rem;
+            color: #28a745;
+            opacity: 0; /* Initially hidden */
+            visibility: hidden; /* Initially hidden */
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .copy-success.show {
+            opacity: 1; /* Show when 'show' class is added */
+            visibility: visible; /* Show when 'show' class is added */
+        }
     </style>
 </head>
 <body>
     <div id="loading-overlay" class="loading-overlay">
         <div class="loading-spinner"></div>
-        <p>Loading Python environment and dependencies...</p>
+        <p>Converting Markdown to HTML...</p>
     </div>
 
     <div class="container" id="main-content" style="display: none;">
         <div class="header">
             <h1>Markdown to HTML Converter</h1>
-            <p>Convert Markdown text for Chumbaka LMS using Pyodide</p>
+            <p>Convert Markdown text for Chumbaka LMS</p>
         </div>
 
         <div class="converter-section">
@@ -314,11 +425,10 @@
                     <textarea 
                         id="markdown-input" 
                         class="markdown-input"
-                        placeholder="# Hello World\n\nThis is a sample markdown document."
-                    ></textarea>
+                        placeholder="# Hello World&#10;&#10;This is a sample markdown document."></textarea>
                 </div>
 
-                <button class="convert-btn" onclick="convertMarkdown()">Convert to HTML</button>
+                <button class="convert-btn" style="display: inline-block;" onclick="convertMarkdown()">Convert to HTML</button>
 
                 <div id="output-section" class="output-section">
                     <div class="output-tabs">
@@ -327,7 +437,7 @@
                     </div>
 
                     <div id="html-code" class="tab-content active">
-                        <button class="copy-btn" onclick="copyToClipboard()">Copy HTML</button>
+                        <button class="copy-btn convert-btn" onclick="copyToClipboard()">Copy HTML</button>
                         <span class="copy-success" id="copy-success">Copied!</span>
                         <div id="html-output" class="html-output"></div>
                     </div>
@@ -358,7 +468,7 @@
 
             // Show loading overlay
             loadingOverlay.style.display = 'flex';
-            mainContent.style.display = 'none';
+            mainContent.style.display = 'none'; // Temporarily hide main content
 
             // Disable button during conversion
             convertBtn.disabled = true;
@@ -384,7 +494,7 @@
                 htmlOutput.textContent = errorMessage;
                 htmlPreview.innerHTML = `<div class="error-message">${errorMessage}</div>`;
             } finally {
-                // Hide loading overlay
+                // Hide loading overlay and show main content
                 loadingOverlay.style.display = 'none';
                 mainContent.style.display = 'block';
 
@@ -421,15 +531,25 @@
                 const firstParagraph = blockquote.querySelector('p');
                 if (!firstParagraph) return;
 
-                // Get the first character to check for emoji
                 const text = firstParagraph.textContent.trim();
                 if (!text) return;
 
-                // Simple emoji detection
+                // Simple emoji detection using Unicode property escape
+                // \p{Emoji} for any emoji, \uFE0F for variation selector-16 (to ensure emoji presentation)
                 const emojiMatch = /^(\p{Emoji}|\uFE0F)/u.exec(text);
+                
                 if (emojiMatch) {
                     const emoji = emojiMatch[0];
-                    const content = blockquote.innerHTML.replace(emoji, '').trim();
+                    // Remove the detected emoji from the beginning of the first paragraph's text content.
+                    // Create a new regex that matches the *exact* emoji string at the start
+                    const specificEmojiRegex = new RegExp(`^${emoji.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}`);
+                    const updatedPContent = firstParagraph.innerHTML.replace(specificEmojiRegex, '').trim();
+
+                    // Replace the original first paragraph with the updated one
+                    firstParagraph.innerHTML = updatedPContent;
+
+                    // Now, get the full innerHTML of the blockquote to include any other elements
+                    const content = blockquote.innerHTML;
 
                     // Create a styled table
                     const table = document.createElement('table');
@@ -447,7 +567,7 @@
                     // Icon cell
                     const tdIcon = document.createElement('td');
                     tdIcon.style.width = '70px';
-                    tdIcon.style.verticalAlign = 'top';
+                    tdIcon.style.verticalAlign = 'middle';
                     tdIcon.style.textAlign = 'center';
 
                     const h3Icon = document.createElement('h3');
@@ -463,11 +583,11 @@
 
                     // Content cell
                     const tdText = document.createElement('td');
-                    tdText.style.verticalAlign = 'top';
+                    tdText.style.verticalAlign = 'middle';
 
                     const pText = document.createElement('div');
                     pText.style.margin = '0';
-                    pText.innerHTML = content;
+                    pText.innerHTML = content; // Use the modified content
 
                     tdText.appendChild(pText);
 
@@ -488,7 +608,8 @@
             iframes.forEach(iframe => {
                 const nextSibling = iframe.nextElementSibling;
                 if (nextSibling && (nextSibling.tagName === 'BLOCKQUOTE' ||
-                                    nextSibling.tagName === 'TABLE')) {
+                                     nextSibling.tagName === 'TABLE' ||
+                                     nextSibling.tagName === 'DETAILS')) { // Also consider details for spacing
                     iframe.insertAdjacentHTML('afterend', '<br>');
                 }
             });
@@ -498,7 +619,9 @@
             images.forEach(img => {
                 const prevSibling = img.previousElementSibling;
                 if (prevSibling && (prevSibling.tagName === 'P' ||
-                                    prevSibling.tagName === 'SPAN')) {
+                                     prevSibling.tagName === 'SPAN' ||
+                                     prevSibling.tagName === 'UL' || // Also consider lists for spacing
+                                     prevSibling.tagName === 'OL')) { // Also consider lists for spacing
                     img.insertAdjacentHTML('beforebegin', '<br>');
                 }
             });
@@ -507,71 +630,71 @@
         function processListSpacing(container) {
             const listItems = container.querySelectorAll('li');
             listItems.forEach((item, index, items) => {
-                const isTopLevelOrdered = (item.closest('ol') && !item.closest('li'));
+                const isTopLevelOrdered = (item.closest('ol') && !item.closest('li ol') && !item.closest('li ul'));
                 const hasChildren = item.querySelector('ol, ul') !== null;
 
                 let isFollowedByTopLevel = false;
                 if (index + 1 < items.length) {
                     const nextItem = items[index + 1];
-                    isFollowedByTopLevel = nextItem.closest('ol') && !nextItem.closest('li');
+                    isFollowedByTopLevel = nextItem.closest('ol') && !nextItem.closest('li ol') && !nextItem.closest('li ul');
                 }
 
                 let brTags = '';
+                // Adjusted logic for spacing to avoid excessive <br> tags
                 if (isTopLevelOrdered && isFollowedByTopLevel) {
-                    brTags = "<br><br><br><br>";
+                    brTags = "<br><br><br><br>"; // More space between top-level list items
                 } else if (hasChildren) {
-                    brTags = "<br>";
-                } else if (isFollowedByTopLevel) {
-                    brTags = "<br><br><br><br>";
+                    brTags = "<br>"; // Space after items that contain sub-lists
+                } else if (isTopLevelOrdered && !hasChildren && index + 1 < items.length) {
+                    // If it's a top-level list item, has no children, and isn't the last item
+                    brTags = "<br>"; // Add a single <br> for normal list spacing
                 }
 
+
                 if (brTags) {
-                    item.insertAdjacentHTML('beforeend', brTags);
+                    // Ensure we don't add multiple <br> tags if they already exist
+                    const lastChild = item.lastChild;
+                    if (lastChild && lastChild.nodeName === 'BR' && brTags === '<br>') {
+                        // If there's already a <br> and we only want one, do nothing
+                    } else if (lastChild && lastChild.nodeName === 'BR' && brTags === '<br><br><br><br>') {
+                        // If there's already a <br> and we want more, remove existing and add desired
+                        while(item.lastChild && item.lastChild.nodeName === 'BR') {
+                            item.removeChild(item.lastChild);
+                        }
+                        item.insertAdjacentHTML('beforeend', brTags);
+                    } else {
+                        item.insertAdjacentHTML('beforeend', brTags);
+                    }
                 }
             });
         }
 
         function createCollapsibleSections(container) {
-            // This is a simplified version of the Python implementation
-            // Create a temporary div to hold our processed content
             const tempDiv = document.createElement('div');
-
-            // Collect all elements
             const allElements = Array.from(container.children);
             let currentSectionContent = [];
             let currentHeading = null;
 
-            // Process each element
             allElements.forEach(element => {
                 if (element.tagName === 'H3') {
-                    // If we have a current heading and content, add them to the temp div
                     if (currentHeading) {
                         addSectionToTempDiv(tempDiv, currentHeading, currentSectionContent);
                     }
-
-                    // Start a new section
                     currentHeading = element;
                     currentSectionContent = [];
                 } else {
-                    // If we have a heading but no content array, create it
-                    if (currentHeading && !currentSectionContent) {
-                        currentSectionContent = [];
-                    }
                     if (currentHeading || currentSectionContent.length > 0) {
                         currentSectionContent.push(element);
+                    } else {
+                        tempDiv.appendChild(element.cloneNode(true));
                     }
                 }
             });
 
-            // Add the last section if it exists
             if (currentHeading) {
                 addSectionToTempDiv(tempDiv, currentHeading, currentSectionContent);
-            } else if (currentSectionContent.length > 0) {
-                // If there's content but no heading, just add it as is
-                currentSectionContent.forEach(el => tempDiv.appendChild(el.cloneNode(true)));
             }
 
-            // Replace the container's content with our processed content
             container.innerHTML = '';
             while (tempDiv.firstChild) {
                 container.appendChild(tempDiv.firstChild);
@@ -580,9 +703,10 @@
 
         function addSectionToTempDiv(tempDiv, heading, contentElements) {
             const detailsBlock = document.createElement('details');
-            detailsBlock.open = true; // Make sections open by default
+            detailsBlock.open = true;
 
             const summaryBlock = document.createElement('summary');
+            // Applying inline styles for summary (can be moved to CSS if preferred)
             summaryBlock.style.padding = '15px';
             summaryBlock.style.marginBottom = '25px';
             summaryBlock.style.cursor = 'pointer';
@@ -596,7 +720,6 @@
             summaryBlock.appendChild(strongHeading);
             detailsBlock.appendChild(summaryBlock);
 
-            // Add content elements
             contentElements.forEach(element => {
                 if (element) {
                     detailsBlock.appendChild(element.cloneNode(true));
@@ -625,7 +748,6 @@
                 }, 2000);
             } catch (err) {
                 console.error('Error copying to clipboard:', err);
-                // Fallback for older browsers
                 const textArea = document.createElement('textarea');
                 textArea.value = htmlOutput;
                 document.body.appendChild(textArea);
@@ -633,7 +755,7 @@
                 try {
                     document.execCommand('copy');
                     copySuccess.classList.add('show');
-                    setTimeout(() => {
+                     setTimeout(() => {
                         copySuccess.classList.remove('show');
                     }, 2000);
                 } catch (fallbackErr) {
@@ -643,7 +765,6 @@
             }
         }
 
-        // Show the main content and hide loading overlay when page loads
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('loading-overlay').style.display = 'none';
             document.getElementById('main-content').style.display = 'block';
