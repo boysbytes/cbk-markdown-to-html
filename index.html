@@ -54,8 +54,7 @@
             overflow: hidden;
         }
 
-        .converter-header {
-        }
+        .converter-header {}
 
         .converter-header h2 {
             font-size: 1.8rem;
@@ -127,7 +126,6 @@
             border-radius: 5px;
             cursor: pointer;
             transition: background 0.3s ease;
-            /* Removed display: block; and margin: 20px auto; from here */
             font-size: 1rem;
         }
 
@@ -135,10 +133,7 @@
             background: #218838;
         }
 
-        /* Styling for the copy button to match the convert button */
         .copy-btn {
-            /* Inherits most styles from .convert-btn */
-            /* Ensure it's inline-block to sit next to text/span */
             display: inline-block;
             margin-top: 10px;
             margin-bottom: 10px;
@@ -197,7 +192,6 @@
             color: #495057;
         }
 
-        /* Styling for the markdown output preview - IMPROVED */
         .html-preview {
             border: 1px solid #e9ecef;
             border-radius: 10px;
@@ -208,10 +202,15 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
             color: #333;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* subtle shadow */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
-        .html-preview h1, .html-preview h2, .html-preview h3, .html-preview h4, .html-preview h5, .html-preview h6 {
+        .html-preview h1,
+        .html-preview h2,
+        .html-preview h3,
+        .html-preview h4,
+        .html-preview h5,
+        .html-preview h6 {
             color: #1f2328;
             margin-top: 1.5em;
             margin-bottom: 0.8em;
@@ -219,24 +218,48 @@
             font-weight: 600;
         }
 
-        .html-preview h1 { font-size: 2.2em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
-        .html-preview h2 { font-size: 1.8em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
-        .html-preview h3 { font-size: 1.5em; }
-        .html-preview h4 { font-size: 1.2em; }
-        .html-preview h5 { font-size: 1em; }
-        .html-preview h6 { font-size: 0.9em; color: #6a737d; }
+        .html-preview h1 {
+            font-size: 2.2em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.3em;
+        }
+
+        .html-preview h2 {
+            font-size: 1.8em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.3em;
+        }
+
+        .html-preview h3 {
+            font-size: 1.5em;
+        }
+
+        .html-preview h4 {
+            font-size: 1.2em;
+        }
+
+        .html-preview h5 {
+            font-size: 1em;
+        }
+
+        .html-preview h6 {
+            font-size: 0.9em;
+            color: #6a737d;
+        }
 
         .html-preview p {
             margin-bottom: 1em;
             color: #333;
         }
 
-        .html-preview ul, .html-preview ol {
+        .html-preview ul,
+        .html-preview ol {
             margin: 0 0 1em 2em;
             padding: 0;
         }
 
-        .html-preview ul li, .html-preview ol li {
+        .html-preview ul li,
+        .html-preview ol li {
             margin-bottom: 0.5em;
         }
 
@@ -284,11 +307,12 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 1em;
-            background-color: #ffffff; /* This will be overridden by the custom table style for blockquotes */
-            border-radius: 8px; /* This will be overridden for custom blockquote tables */
+            background-color: #ffffff;
+            border-radius: 8px;
         }
 
-        .html-preview th, .html-preview td {
+        .html-preview th,
+        .html-preview td {
             border: 1px solid #dfe2e5;
             padding: 0.6em 1em;
             text-align: left;
@@ -298,17 +322,14 @@
             background-color: #f6f8fa;
             font-weight: 600;
         }
-        
+
         .html-preview img {
             max-width: 100%;
             height: auto;
-            display: block; /* Ensures images behave like blocks for margin */
-            margin: 1em 0; /* Add some vertical spacing around images */
+            display: block;
         }
-
-
-        /* Styling for custom blockquote tables */
-        table {
+        
+        .html-preview .emoji-blockquote {
             border-style: none;
             width: 100%;
             max-width: 560px;
@@ -318,19 +339,11 @@
             margin: 10px 0;
         }
 
-        table td {
+        .html-preview .emoji-blockquote td {
             padding: 20px;
+            border: none;
         }
 
-        table td h3 {
-            margin: 0;
-        }
-
-        table td p {
-            margin: 0;
-        }
-
-        /* Collapsible section styling */
         details {
             margin-bottom: 20px;
         }
@@ -362,8 +375,9 @@
             z-index: 9999;
             font-size: 1.2rem;
             color: #333;
-            display: none; /* Changed from hidden to display:none */
+            display: none;
         }
+
         .loading-spinner {
             width: 50px;
             height: 50px;
@@ -373,25 +387,29 @@
             animation: spin 1s linear infinite;
             margin-bottom: 20px;
         }
+
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
-        /* Added for Copy Success message */
         .copy-success {
-            display: inline-block; /* Make it sit next to the button */
+            display: inline-block;
             margin-left: 10px;
             font-size: 0.9rem;
             color: #28a745;
-            opacity: 0; /* Initially hidden */
-            visibility: hidden; /* Initially hidden */
+            opacity: 0;
+            visibility: hidden;
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
 
         .copy-success.show {
-            opacity: 1; /* Show when 'show' class is added */
-            visibility: visible; /* Show when 'show' class is added */
+            opacity: 1;
+            visibility: visible;
         }
     </style>
 </head>
@@ -423,10 +441,7 @@
             <div class="converter-body">
                 <div class="input-section">
                     <label for="markdown-input">Enter Markdown Content:</label>
-                    <textarea 
-                        id="markdown-input" 
-                        class="markdown-input"
-                        placeholder="# Hello World&#10;&#10;This is a sample markdown document."></textarea>
+                    <textarea id="markdown-input" class="markdown-input" placeholder="# Hello World&#10;&#10;This is a sample markdown document."></textarea>
                 </div>
 
                 <button class="convert-btn" style="display: inline-block;" onclick="convertMarkdown()">Convert to HTML</button>
@@ -452,7 +467,62 @@
     </div>
 
     <script type="text/javascript">
-        // Simplified JavaScript version of the markdown to HTML converter
+        // =================================================================================
+        // CONFIGURATION BLOCK
+        // =================================================================================
+        const spacingConfig = {
+            // -- Default spacing if no specific rule is found --
+            "default": 1,
+
+            // -- Emoji blockcode to X --
+            "emoji-blockquote_to_ol-l1": 3,
+            "emoji-blockquote_to_ol-l2": 1,
+            "emoji-blockquote_to_p": 1,
+
+            // -- Numbered list item (ol) to Numbered list item (ol) --
+            "ol-li-l1_to_ol-li-l1": 3,
+            "ol-li-l1_to_ol-li-l2": 1,
+            "ol-li-l2_to_ol-li-l2": 1,
+            "ol-li-l2_to_ol-li-l1": 2,
+
+            // -- Bulleted list item (ul) to Bulleted list item (ul) --
+            "ul-li-l1_to_ul-li-l1": 1,
+            "ul-li-l1_to_ul-li-l2": 1,
+            "ul-li-l2_to_ul-li-l2": 1,
+            "ul-li-l2_to_ul-li-l1": 1,
+
+            // -- Numbered list to X --
+            "ol_to_details": 2,
+
+            // -- Sentence to X --
+            "p_to_image": 1,
+            "p_to_details": 1,
+
+            // -- Image to X --
+            "image_to_p": 1,
+            "image_to_ol": 2,
+            "image_to_emoji-blockquote": 2,
+            "image_to_table": 2,
+
+            // -- Table to X --
+            "table_to_ol": 1,
+            "table_to_image": 2,
+            "table_to_p": 1,
+            "table_to_details": 2,
+
+            // -- Bullet list to X (Handles spacing AFTER a bulleted list ends) --
+            "ul_to_ol": 1,
+            "ul_to_image": 1,
+            "ul_to_table": 1,
+            "ul_to_p": 1,
+            "ul_to_details": 1,
+            "ul_to_emoji-blockquote": 2,
+
+            // -- Details to X --
+            "details_to_details": 3,
+        };
+
+
         async function convertMarkdown() {
             const input = document.getElementById('markdown-input').value;
             const outputSection = document.getElementById('output-section');
@@ -467,22 +537,15 @@
                 return;
             }
 
-            // Show loading overlay
             loadingOverlay.style.display = 'flex';
-            mainContent.style.display = 'none'; // Temporarily hide main content
-
-            // Disable button during conversion
+            mainContent.style.display = 'none';
             convertBtn.disabled = true;
             convertBtn.textContent = 'Converting...';
-
             htmlOutput.textContent = 'Converting...';
             htmlPreview.innerHTML = 'Converting...';
 
             try {
-                // Convert markdown to HTML using marked.js
                 let html = marked.parse(input);
-
-                // Process with custom functions
                 html = processCustomMarkdown(html);
 
                 htmlOutput.textContent = html;
@@ -495,33 +558,21 @@
                 htmlOutput.textContent = errorMessage;
                 htmlPreview.innerHTML = `<div class="error-message">${errorMessage}</div>`;
             } finally {
-                // Hide loading overlay and show main content
                 loadingOverlay.style.display = 'none';
                 mainContent.style.display = 'block';
-
-                // Re-enable button
                 convertBtn.disabled = false;
                 convertBtn.textContent = 'Convert to HTML';
             }
         }
 
-        // This function replicates some of the custom processing from the Python code
         function processCustomMarkdown(html) {
-            // Create a temporary div to parse the HTML
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = html;
 
-            // Process blockquotes with emojis
             processBlockquotes(tempDiv);
-
-            // Add spacing elements
-            addSpacingElements(tempDiv);
-
-            // Process list spacing
-            processListSpacing(tempDiv);
-
-            // Create collapsible sections
             createCollapsibleSections(tempDiv);
+            
+            applyCustomSpacing(tempDiv, spacingConfig);
 
             return tempDiv.innerHTML;
         }
@@ -534,38 +585,20 @@
 
                 const text = firstParagraph.textContent.trim();
                 if (!text) return;
-
-                // Simple emoji detection using Unicode property escape
-                // \p{Emoji} for any emoji, \uFE0F for variation selector-16 (to ensure emoji presentation)
-                const emojiMatch = /^(\p{Emoji}|\uFE0F)/u.exec(text);
                 
+                const emojiMatch = /^(\p{Emoji}|\uFE0F)/u.exec(text);
+
                 if (emojiMatch) {
                     const emoji = emojiMatch[0];
-                    // Remove the detected emoji from the beginning of the first paragraph's text content.
-                    // Create a new regex that matches the *exact* emoji string at the start
                     const specificEmojiRegex = new RegExp(`^${emoji.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}`);
-                    const updatedPContent = firstParagraph.innerHTML.replace(specificEmojiRegex, '').trim();
-
-                    // Replace the original first paragraph with the updated one
-                    firstParagraph.innerHTML = updatedPContent;
-
-                    // Now, get the full innerHTML of the blockquote to include any other elements
+                    firstParagraph.innerHTML = firstParagraph.innerHTML.replace(specificEmojiRegex, '').trim();
                     const content = blockquote.innerHTML;
 
-                    // Create a styled table
                     const table = document.createElement('table');
-                    table.style.borderStyle = 'none';
-                    table.style.width = '100%';
-                    table.style.maxWidth = '560px';
-                    table.style.height = 'auto';
-                    table.style.backgroundColor = '#ffe5b4';
-                    table.style.borderRadius = '8px';
-                    table.style.margin = '10px 0';
+                    table.className = 'emoji-blockquote';
 
                     const tbody = document.createElement('tbody');
                     const tr = document.createElement('tr');
-
-                    // Icon cell
                     const tdIcon = document.createElement('td');
                     tdIcon.style.width = '70px';
                     tdIcon.style.verticalAlign = 'middle';
@@ -573,102 +606,94 @@
 
                     const h3Icon = document.createElement('h3');
                     h3Icon.style.margin = '0';
-
                     const spanIcon = document.createElement('span');
                     spanIcon.style.fontSize = '36pt';
                     spanIcon.style.lineHeight = '1';
                     spanIcon.textContent = emoji;
-
                     h3Icon.appendChild(spanIcon);
                     tdIcon.appendChild(h3Icon);
 
-                    // Content cell
                     const tdText = document.createElement('td');
                     tdText.style.verticalAlign = 'middle';
-
-                    const pText = document.createElement('div');
-                    pText.style.margin = '0';
-                    pText.innerHTML = content; // Use the modified content
-
-                    tdText.appendChild(pText);
+                    const divText = document.createElement('div');
+                    divText.style.margin = '0';
+                    divText.innerHTML = content;
+                    tdText.appendChild(divText);
 
                     tr.appendChild(tdIcon);
                     tr.appendChild(tdText);
                     tbody.appendChild(tr);
                     table.appendChild(tbody);
 
-                    // Replace the blockquote with our table
                     blockquote.parentNode.replaceChild(table, blockquote);
                 }
             });
         }
+        
+        function getElementType(element) {
+            if (!element || !element.tagName) return 'unknown';
+            const tagName = element.tagName.toLowerCase();
 
-        function addSpacingElements(container) {
-            // Add spacing after iframes
-            const iframes = container.querySelectorAll('iframe');
-            iframes.forEach(iframe => {
-                const nextSibling = iframe.nextElementSibling;
-                if (nextSibling && (nextSibling.tagName === 'BLOCKQUOTE' ||
-                                     nextSibling.tagName === 'TABLE' ||
-                                     nextSibling.tagName === 'DETAILS')) { // Also consider details for spacing
-                    iframe.insertAdjacentHTML('afterend', '<br>');
-                }
-            });
-
-            // Add spacing before images
-            const images = container.querySelectorAll('img');
-            images.forEach(img => {
-                const prevSibling = img.previousElementSibling;
-                if (prevSibling && (prevSibling.tagName === 'P' ||
-                                     prevSibling.tagName === 'SPAN' ||
-                                     prevSibling.tagName === 'UL' || // Also consider lists for spacing
-                                     prevSibling.tagName === 'OL')) { // Also consider lists for spacing
-                    img.insertAdjacentHTML('beforebegin', '<br>');
-                }
-            });
+            switch (tagName) {
+                case 'table':
+                    return element.classList.contains('emoji-blockquote') ? 'emoji-blockquote' : 'table';
+                case 'p':
+                    if (element.children.length === 1 && element.firstElementChild?.tagName.toLowerCase() === 'img') {
+                        return 'image';
+                    }
+                    return 'p';
+                case 'ol':
+                case 'ul':
+                    return tagName;
+                case 'details':
+                    return 'details';
+                default:
+                    return tagName;
+            }
         }
 
-        function processListSpacing(container) {
-            const listItems = container.querySelectorAll('li');
-            listItems.forEach((item, index, items) => {
-                const isTopLevelOrdered = (item.closest('ol') && !item.closest('li ol') && !item.closest('li ul'));
-                const hasChildren = item.querySelector('ol, ul') !== null;
+        function applyCustomSpacing(container, config) {
+            const children = Array.from(container.children);
+            
+            // --- Inter-element spacing (between p, table, ul, ol, etc.) ---
+            for (let i = 0; i < children.length - 1; i++) {
+                const currentElement = children[i];
+                const nextElement = children[i+1];
 
-                let isFollowedByTopLevel = false;
-                if (index + 1 < items.length) {
-                    const nextItem = items[index + 1];
-                    isFollowedByTopLevel = nextItem.closest('ol') && !nextItem.closest('li ol') && !nextItem.closest('li ul');
+                const currentType = getElementType(currentElement);
+                const nextType = getElementType(nextElement);
+                
+                const ruleKey = `${currentType}_to_${nextType}`;
+                const brCount = config[ruleKey] ?? config["default"] ?? 1;
+
+                if (brCount > 0) {
+                    currentElement.insertAdjacentHTML('afterend', '<br>'.repeat(brCount));
                 }
+            }
 
-                let brTags = '';
-                // Adjusted logic for spacing to avoid excessive <br> tags
-                if (isTopLevelOrdered && isFollowedByTopLevel) {
-                    brTags = "<br><br><br><br>"; // More space between top-level list items
-                } else if (hasChildren) {
-                    brTags = "<br>"; // Space after items that contain sub-lists
-                } else if (isTopLevelOrdered && !hasChildren && index + 1 < items.length) {
-                    // If it's a top-level list item, has no children, and isn't the last item
-                    brTags = "<br>"; // Add a single <br> for normal list spacing
-                }
+            // --- Intra-list spacing (between li elements) ---
+            const lists = container.querySelectorAll('ol, ul');
+            lists.forEach(list => {
+                const listType = list.tagName.toLowerCase(); 
+                const listItems = Array.from(list.children).filter(child => child.tagName === 'LI');
 
+                for (let i = 0; i < listItems.length - 1; i++) {
+                    const currentLi = listItems[i];
+                    const nextLi = listItems[i + 1];
+                    
+                    const currentLiLevel = currentLi.closest('ol, ul').parentElement.tagName === 'LI' ? 'l2' : 'l1';
+                    const nextLiLevel = nextLi.closest('ol, ul').parentElement.tagName === 'LI' ? 'l2' : 'l1';
 
-                if (brTags) {
-                    // Ensure we don't add multiple <br> tags if they already exist
-                    const lastChild = item.lastChild;
-                    if (lastChild && lastChild.nodeName === 'BR' && brTags === '<br>') {
-                        // If there's already a <br> and we only want one, do nothing
-                    } else if (lastChild && lastChild.nodeName === 'BR' && brTags === '<br><br><br><br>') {
-                        // If there's already a <br> and we want more, remove existing and add desired
-                        while(item.lastChild && item.lastChild.nodeName === 'BR') {
-                            item.removeChild(item.lastChild);
-                        }
-                        item.insertAdjacentHTML('beforeend', brTags);
-                    } else {
-                        item.insertAdjacentHTML('beforeend', brTags);
+                    const ruleKey = `${listType}-li-${currentLiLevel}_to_${listType}-li-${nextLiLevel}`;
+                    const brCount = config[ruleKey] ?? config["default"] ?? 1;
+
+                    if (brCount > 0) {
+                        currentLi.insertAdjacentHTML('beforeend', '<br>'.repeat(brCount));
                     }
                 }
             });
         }
+
 
         function createCollapsibleSections(container) {
             const tempDiv = document.createElement('div');
@@ -707,14 +732,6 @@
             detailsBlock.open = true;
 
             const summaryBlock = document.createElement('summary');
-            // Applying inline styles for summary (can be moved to CSS if preferred)
-            summaryBlock.style.padding = '15px';
-            summaryBlock.style.marginBottom = '25px';
-            summaryBlock.style.cursor = 'pointer';
-            summaryBlock.style.backgroundColor = '#f9f7f0';
-            summaryBlock.style.borderRadius = '5px';
-            summaryBlock.style.fontWeight = 'bold';
-
             const headingText = heading.textContent.trim();
             const strongHeading = document.createElement('strong');
             strongHeading.textContent = headingText;
@@ -756,7 +773,7 @@
                 try {
                     document.execCommand('copy');
                     copySuccess.classList.add('show');
-                     setTimeout(() => {
+                    setTimeout(() => {
                         copySuccess.classList.remove('show');
                     }, 2000);
                 } catch (fallbackErr) {
