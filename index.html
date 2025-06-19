@@ -202,219 +202,6 @@
             color: #333;
         }
 
-        /* Styling for rendered HTML elements in preview - GitHub theme */
-        .html-preview h1 {
-            font-size: 2rem;
-            font-weight: 600;
-            margin: 24px 0 16px 0;
-            color: #1f2328;
-            border-bottom: 1px solid #d1d9e0;
-            padding-bottom: 8px;
-        }
-
-        .html-preview h2 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin: 24px 0 16px 0;
-            color: #1f2328;
-            border-bottom: 1px solid #d1d9e0;
-            padding-bottom: 8px;
-        }
-
-        .html-preview h3 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin: 24px 0 16px 0;
-            color: #1f2328;
-        }
-
-        .html-preview h4, .html-preview h5, .html-preview h6 {
-            font-weight: 600;
-            margin: 24px 0 16px 0;
-            color: #1f2328;
-        }
-
-        .html-preview p {
-            margin: 16px 0;
-        }
-
-        .html-preview ul, .html-preview ol {
-            margin: 16px 0;
-            padding-left: 32px;
-        }
-
-        .html-preview li {
-            margin: 4px 0;
-        }
-
-        .html-preview blockquote {
-            /* This will be overridden by custom table styling */
-            margin: 16px 0;
-            padding: 0 16px;
-            border-left: 4px solid #d1d9e0;
-            color: #656d76;
-        }
-
-        /* Custom styles for the generated table from blockquotes */
-        .html-preview table[style*="border-style: none"] {
-            border-style: none;
-            width: 100%;
-            max-width: 560px;
-            height: auto;
-            background-color: #ffe5b4;
-            border-radius: 8px;
-            margin: 10px 0;
-            border-spacing: 0; /* Important for cellpadding effect */
-        }
-        .html-preview table[style*="border-style: none"] td {
-            border: none; /* Remove default table borders */
-            padding: 20px; /* Equivalent to cellpadding */
-        }
-        .html-preview table[style*="border-style: none"] td:first-child {
-            width: 70px;
-            vertical-align: top;
-            text-align: center;
-        }
-        .html-preview table[style*="border-style: none"] td:first-child h3 {
-            margin: 0;
-        }
-        .html-preview table[style*="border-style: none"] td:first-child span {
-            font-size: 36pt;
-            line-height: 1;
-        }
-        .html-preview table[style*="border-style: none"] td:last-child {
-            vertical-align: top;
-        }
-        .html-preview table[style*="border-style: none"] p {
-            margin: 0; /* Remove default paragraph margin inside the table */
-        }
-
-
-        .html-preview code {
-            background-color: rgba(175, 184, 193, 0.2);
-            padding: 2px 4px;
-            border-radius: 3px;
-            font-family: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
-            font-size: 85%;
-        }
-
-        .html-preview pre {
-            background-color: #f6f8fa;
-            border-radius: 6px;
-            padding: 16px;
-            overflow-x: auto;
-            margin: 16px 0;
-            font-size: 85%;
-        }
-
-        .html-preview pre code {
-            background: none;
-            padding: 0;
-            font-size: 100%;
-        }
-
-        .html-preview a {
-            color: #0969da;
-            text-decoration: none;
-        }
-
-        .html-preview a:hover {
-            text-decoration: underline;
-        }
-
-        .html-preview strong {
-            font-weight: 600;
-        }
-
-        .html-preview em {
-            font-style: italic;
-        }
-
-        .html-preview table {
-            border-collapse: collapse;
-            width: 100%;
-            margin: 16px 0;
-            border-spacing: 0;
-        }
-
-        .html-preview th, .html-preview td {
-            border: 1px solid #d1d9e0;
-            padding: 6px 13px;
-            text-align: left;
-        }
-
-        .html-preview th {
-            background-color: #f6f8fa;
-            font-weight: 600;
-        }
-
-        .html-preview hr {
-            border: none;
-            border-bottom: 1px solid #d1d9e0;
-            margin: 24px 0;
-        }
-
-        .html-preview img {
-            max-width: 100%;
-            height: auto;
-            margin: 16px 0;
-        }
-
-        .copy-btn {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-bottom: 10px;
-            transition: background 0.3s ease;
-        }
-
-        .copy-btn:hover {
-            background: #218838;
-        }
-
-        .copy-success {
-            color: #28a745;
-            font-size: 14px;
-            margin-left: 10px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .copy-success.show {
-            opacity: 1;
-        }
-
-        /* Custom details/summary styling */
-        .html-preview details > summary {
-            padding: 15px;
-            margin-bottom: 25px;
-            cursor: pointer;
-            background-color: #f9f7f0;
-            border-radius: 5px;
-            font-weight: bold;
-        }
-        .html-preview details {
-            margin: 10px 0; /* Add some margin for details blocks */
-        }
-
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-
-            .header h1 {
-                font-size: 2rem;
-            }
-
-            .converter-body {
-                padding: 20px;
-            }
-        }
-
         /* Styling for loading overlay */
         .loading-overlay {
             position: fixed;
@@ -452,8 +239,7 @@
 <body>
     <div id="loading-overlay" class="loading-overlay">
         <div class="loading-spinner"></div>
-        <p>Loading Python environment (Pyodide)... This may take a moment.</p>
-        <p>Please ensure you have `markdown2` and `beautifulsoup4` installed in your Python script's virtual environment or global environment before using it locally for testing.</p>
+        <p>Loading Python environment and dependencies...</p>
     </div>
 
     <div class="container" id="main-content" style="display: none;">
@@ -463,9 +249,7 @@
         </div>
 
         <div class="converter-section">
-            <div class="converter-header">
-            </div>
-
+            <div class="converter-header"></div>
             <div class="instructions">
                 <h3>How to Use:</h3>
                 <ol>
@@ -481,61 +265,17 @@
                     <label for="markdown-input">Enter Markdown Content:</label>
                     <textarea 
                         id="markdown-input" 
-                        class="markdown-input" 
-                        placeholder="# Hello World
-
-This is a sample markdown document.
-
-> 👋 Hello, this is an emoji blockquote!
-> This is a second line inside the blockquote.
-
-## Subheading
-
-Here's some text with **bold** and *italic* formatting.
-
-### Collapsible Section Title 1
-Content for the first collapsible section.
-- Item 1
-- Item 2
-
-### List Example
-
-1. Top-level item 1
-2. Top-level item 2
-   - Nested item 2.1
-   - Nested item 2.2
-3. Top-level item 3
-
-### Link Example
-
-[Visit our website](https://example.com)
-
-### Code Example
-
-```javascript
-console.log('Hello, World!');
-```
-
-### Collapsible Section Title 2
-More content for another collapsible section.
-This could be a paragraph.
-
-<iframe width='560' height='315' src='https://www.youtube.com/embed/dQw4w9WgXcQ' frameborder='0' allowfullscreen></iframe>
-
-Here's some text that might be followed by an image.
-<img src='https://via.placeholder.com/150' alt='Placeholder Image'>
-"
+                        class="markdown-input"
+                        placeholder="# Hello World\n\nThis is a sample markdown document."
                     ></textarea>
                 </div>
 
-                <button class="convert-btn" onclick="convertMarkdown()">
-                    Convert to HTML
-                </button>
+                <button class="convert-btn" onclick="convertMarkdown()">Convert to HTML</button>
 
                 <div id="output-section" class="output-section">
                     <div class="output-tabs">
-                        <button class="tab-btn active" onclick="showTab('html-code')">HTML Code</button>
-                        <button class="tab-btn" onclick="showTab('preview')">Preview</button>
+                        <button class="tab-btn active" onclick="showTab(event, 'html-code')">HTML Code</button>
+                        <button class="tab-btn" onclick="showTab(event, 'preview')">Preview</button>
                     </div>
 
                     <div id="html-code" class="tab-content active">
@@ -554,23 +294,22 @@ Here's some text that might be followed by an image.
 
     <script type="text/javascript">
         let pyodideReadyPromise;
-        let convertMarkdownPython; // This will hold our Python function
+        let convertMarkdownPython;
 
         async function loadPyodideAndPythonScript() {
             const loadingOverlay = document.getElementById('loading-overlay');
             const mainContent = document.getElementById('main-content');
-            
+
             try {
-                // Initialize Pyodide
                 console.log("Loading Pyodide...");
                 pyodide = await loadPyodide({
                     indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/"
                 });
                 console.log("Pyodide loaded.");
 
-                // Load required Python packages (markdown2 and beautifulsoup4)
                 loadingOverlay.querySelector('p').textContent = "Installing Python dependencies...";
-                await pyodide.loadPackage("micropip"); // micropip is needed to install other packages
+                await pyodide.loadPackage("micropip");
+
                 await pyodide.runPythonAsync(`
                     import micropip
                     await micropip.install("markdown2")
@@ -578,31 +317,23 @@ Here's some text that might be followed by an image.
                 `);
                 console.log("Python dependencies installed.");
 
-                // Fetch your Python script from the same directory
-                loadingOverlay.querySelector('p').textContent = "Loading your Python script...";
-                const pythonScriptResponse = await fetch('converter_script.py');
-                const pythonScriptContent = await pythonScriptResponse.text();
+                // Inline Python script content
+                const pythonScriptContent = `
+import markdown2
+from bs4 import BeautifulSoup
+def convert_markdown_to_html(markdown_text: str) -> str:
+    html_text = markdown2.markdown(markdown_text, extras=['fenced-code-blocks', 'tables', 'break-on-newline'])
+    soup = BeautifulSoup(html_text, 'html.parser')
+    return str(soup)
+`;
 
-                // Write the Python script into Pyodide's virtual file system
-                pyodide.FS.writeFile('converter_script.py', pythonScriptContent);
-                console.log("Python script written to Pyodide FS.");
+                await pyodide.runPythonAsync(pythonScriptContent);
 
-                // Import your Python script inside Pyodide
-                await pyodide.runPythonAsync(`
-                    import converter_script
-                `);
-                
-                // Get the Python function and make it accessible from JavaScript
-                convertMarkdownPython = pyodide.globals.get("converter_script").convert_markdown_to_html;
+                convertMarkdownPython = pyodide.globals.get("convert_markdown_to_html");
                 console.log("Python conversion function ready.");
 
                 loadingOverlay.classList.add('hidden');
                 mainContent.style.display = 'block';
-                // Auto-convert on page load if there's placeholder content
-                const input = document.getElementById('markdown-input');
-                if (input.value.trim()) {
-                    convertMarkdown();
-                }
 
             } catch (error) {
                 console.error("Failed to load Pyodide or Python script:", error);
@@ -610,9 +341,7 @@ Here's some text that might be followed by an image.
             }
         }
 
-        // Initialize Pyodide and load the Python script when the page loads
         pyodideReadyPromise = loadPyodideAndPythonScript();
-
 
         async function convertMarkdown() {
             const input = document.getElementById('markdown-input').value;
@@ -629,26 +358,18 @@ Here's some text that might be followed by an image.
             htmlPreview.innerHTML = 'Converting...';
 
             try {
-                // Ensure Pyodide and the Python script are loaded
                 await pyodideReadyPromise;
 
                 if (!convertMarkdownPython) {
                     throw new Error("Python conversion function not loaded.");
                 }
 
-                // Call the Python function from JavaScript
                 const html = await convertMarkdownPython(input);
 
-                // Show the HTML code
                 htmlOutput.textContent = html;
-                
-                // Show the preview
                 htmlPreview.innerHTML = html;
-                
-                // Show the output section
+
                 outputSection.classList.add('show');
-                
-                // Scroll to output
                 outputSection.scrollIntoView({ behavior: 'smooth' });
 
             } catch (error) {
@@ -659,12 +380,10 @@ Here's some text that might be followed by an image.
             }
         }
 
-        function showTab(tabName) {
-            // Remove active class from all tabs and content
+        function showTab(event, tabName) {
+            event.preventDefault(); // Prevent default button behavior
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
-            // Add active class to clicked tab and corresponding content
             event.target.classList.add('active');
             document.getElementById(tabName).classList.add('active');
         }
@@ -672,7 +391,7 @@ Here's some text that might be followed by an image.
         async function copyToClipboard() {
             const htmlOutput = document.getElementById('html-output').textContent;
             const copySuccess = document.getElementById('copy-success');
-            
+
             try {
                 await navigator.clipboard.writeText(htmlOutput);
                 copySuccess.classList.add('show');
@@ -680,22 +399,9 @@ Here's some text that might be followed by an image.
                     copySuccess.classList.remove('show');
                 }, 2000);
             } catch (err) {
-                // Fallback for older browsers
-                const textArea = document.createElement('textarea');
-                textArea.value = htmlOutput;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                
-                copySuccess.classList.add('show');
-                setTimeout(() => {
-                    copySuccess.classList.remove('show');
-                }, 2000);
+                console.error('Error copying to clipboard:', err);
             }
         }
-
-        // The auto-convert on page load is now handled by loadPyodideAndPythonScript after setup
     </script>
 </body>
 </html>
