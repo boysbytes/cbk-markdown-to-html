@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Markdown to HTML Converter</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
+    <title>Markdown to HTML Converter (Pyodide)</title>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
     <style>
+        /* Existing CSS from your provided HTML */
         * {
             margin: 0;
             padding: 0;
@@ -246,11 +247,47 @@
         }
 
         .html-preview blockquote {
+            /* This will be overridden by custom table styling */
             margin: 16px 0;
             padding: 0 16px;
             border-left: 4px solid #d1d9e0;
             color: #656d76;
         }
+
+        /* Custom styles for the generated table from blockquotes */
+        .html-preview table[style*="border-style: none"] {
+            border-style: none;
+            width: 100%;
+            max-width: 560px;
+            height: auto;
+            background-color: #ffe5b4;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-spacing: 0; /* Important for cellpadding effect */
+        }
+        .html-preview table[style*="border-style: none"] td {
+            border: none; /* Remove default table borders */
+            padding: 20px; /* Equivalent to cellpadding */
+        }
+        .html-preview table[style*="border-style: none"] td:first-child {
+            width: 70px;
+            vertical-align: top;
+            text-align: center;
+        }
+        .html-preview table[style*="border-style: none"] td:first-child h3 {
+            margin: 0;
+        }
+        .html-preview table[style*="border-style: none"] td:first-child span {
+            font-size: 36pt;
+            line-height: 1;
+        }
+        .html-preview table[style*="border-style: none"] td:last-child {
+            vertical-align: top;
+        }
+        .html-preview table[style*="border-style: none"] p {
+            margin: 0; /* Remove default paragraph margin inside the table */
+        }
+
 
         .html-preview code {
             background-color: rgba(175, 184, 193, 0.2);
@@ -349,6 +386,20 @@
             opacity: 1;
         }
 
+        /* Custom details/summary styling */
+        .html-preview details > summary {
+            padding: 15px;
+            margin-bottom: 25px;
+            cursor: pointer;
+            background-color: #f9f7f0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .html-preview details {
+            margin: 10px 0; /* Add some margin for details blocks */
+        }
+
+
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
@@ -362,13 +413,52 @@
                 padding: 20px;
             }
         }
+
+        /* Styling for loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1000;
+            font-size: 1.2rem;
+            color: #333;
+        }
+        .loading-spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #3498db;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p>Loading Python environment (Pyodide)... This may take a moment.</p>
+        <p>Please ensure you have `markdown2` and `beautifulsoup4` installed in your Python script's virtual environment or global environment before using it locally for testing.</p>
+    </div>
+
+    <div class="container" id="main-content" style="display: none;">
         <div class="header">
             <h1>Markdown to HTML Converter</h1>
-            <p>Convert Markdown text for Chumbaka LMS</p>
+            <p>Convert Markdown text for Chumbaka LMS using Pyodide</p>
         </div>
 
         <div class="converter-section">
@@ -395,15 +485,25 @@
 
 This is a sample markdown document.
 
+> 👋 Hello, this is an emoji blockquote!
+> This is a second line inside the blockquote.
+
 ## Subheading
 
 Here's some text with **bold** and *italic* formatting.
 
+### Collapsible Section Title 1
+Content for the first collapsible section.
+- Item 1
+- Item 2
+
 ### List Example
 
-- List item 1
-- List item 2
-- List item 3
+1. Top-level item 1
+2. Top-level item 2
+   - Nested item 2.1
+   - Nested item 2.2
+3. Top-level item 3
 
 ### Link Example
 
@@ -413,117 +513,3 @@ Here's some text with **bold** and *italic* formatting.
 
 ```javascript
 console.log('Hello, World!');
-```"
-                    ></textarea>
-                </div>
-
-                <button class="convert-btn" onclick="convertMarkdown()">
-                    Convert to HTML
-                </button>
-
-                <div id="output-section" class="output-section">
-                    <div class="output-tabs">
-                        <button class="tab-btn active" onclick="showTab('html-code')">HTML Code</button>
-                        <button class="tab-btn" onclick="showTab('preview')">Preview</button>
-                    </div>
-
-                    <div id="html-code" class="tab-content active">
-                        <button class="copy-btn" onclick="copyToClipboard()">Copy HTML</button>
-                        <span class="copy-success" id="copy-success">Copied!</span>
-                        <div id="html-output" class="html-output"></div>
-                    </div>
-
-                    <div id="preview" class="tab-content">
-                        <div id="html-preview" class="html-preview"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Configure marked for standard markdown parsing
-        marked.setOptions({
-            breaks: true,
-            gfm: true
-        });
-
-        function convertMarkdown() {
-            const input = document.getElementById('markdown-input').value;
-            const outputSection = document.getElementById('output-section');
-            const htmlOutput = document.getElementById('html-output');
-            const htmlPreview = document.getElementById('html-preview');
-
-            if (!input.trim()) {
-                alert('Please enter some Markdown content to convert.');
-                return;
-            }
-
-            try {
-                // Convert markdown to HTML
-                const html = marked.parse(input);
-
-                // Show the HTML code
-                htmlOutput.textContent = html;
-                
-                // Show the preview
-                htmlPreview.innerHTML = html;
-                
-                // Show the output section
-                outputSection.classList.add('show');
-                
-                // Scroll to output
-                outputSection.scrollIntoView({ behavior: 'smooth' });
-
-            } catch (error) {
-                alert('Error converting Markdown: ' + error.message);
-                console.error('Conversion error:', error);
-            }
-        }
-
-        function showTab(tabName) {
-            // Remove active class from all tabs and content
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
-            // Add active class to clicked tab and corresponding content
-            event.target.classList.add('active');
-            document.getElementById(tabName).classList.add('active');
-        }
-
-        async function copyToClipboard() {
-            const htmlOutput = document.getElementById('html-output').textContent;
-            const copySuccess = document.getElementById('copy-success');
-            
-            try {
-                await navigator.clipboard.writeText(htmlOutput);
-                copySuccess.classList.add('show');
-                setTimeout(() => {
-                    copySuccess.classList.remove('show');
-                }, 2000);
-            } catch (err) {
-                // Fallback for older browsers
-                const textArea = document.createElement('textarea');
-                textArea.value = htmlOutput;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                
-                copySuccess.classList.add('show');
-                setTimeout(() => {
-                    copySuccess.classList.remove('show');
-                }, 2000);
-            }
-        }
-
-        // Auto-convert on page load if there's placeholder content
-        window.addEventListener('load', () => {
-            const input = document.getElementById('markdown-input');
-            if (input.value.trim()) {
-                convertMarkdown();
-            }
-        });
-    </script>
-</body>
-</html>
