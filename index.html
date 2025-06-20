@@ -478,8 +478,8 @@
             // Numbered list item → Numbered list item
             "ol-li-l1_to_ol-li-l1": 3,
             "ol-li-l1_to_ol-li-l2": 1,
-            "ol-li-l2_to_ol-li-l2": 1,
-            "ol-li-l2_to_ol-li-l1": 2,
+            "ol-li-l2_to_ol-li-l2": 0,
+            "ol-li-l2_to_ol-li-l1": 1,
 
             // Bulleted list item → Bulleted list item
             "ul-li-l1_to_ul-li-l1": 1,
@@ -488,7 +488,7 @@
             "ul-li-l2_to_ul-li-l1": 1,
 
             // Numbered list → Details
-            "ol_to_details": 2,
+            "ol_to_details": 1,
 
             // Paragraph → X
             "p_to_image": 1,
@@ -504,7 +504,7 @@
             "table_to_ol": 1,
             "table_to_image": 2,
             "table_to_p": 1,
-            "table_to_details": 2,
+            "table_to_details": 1,
 
             // End of bulleted list → X
             "ul_to_ol": 1,
@@ -515,7 +515,7 @@
             "ul_to_emoji-blockquote": 2,
 
             // Details → Details
-            "details_to_details": 3,
+            "details_to_details": 1,
 
             // Iframe → X
             "iframe_to_image": 1,
@@ -770,6 +770,12 @@
             detailsBlock.open = true;
 
             const summaryBlock = document.createElement('summary');
+            // Add inline styles to match your requested format
+            summaryBlock.style.padding = '15px';
+            summaryBlock.style.marginBottom = '25px';
+            summaryBlock.style.cursor = 'pointer';
+            summaryBlock.style.backgroundColor = '#f9f7f0';
+            
             const headingText = heading.textContent.trim();
             const strongHeading = document.createElement('strong');
             strongHeading.textContent = headingText;
