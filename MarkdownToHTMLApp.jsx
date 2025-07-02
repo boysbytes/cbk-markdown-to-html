@@ -30,7 +30,7 @@ const Button = ({ children, onClick, variant, size, title, className }) => {
 };
 
 // Function to format the raw HTML by applying custom transformations
-function formatHtml(html, addSpacingNumberedLists) { // Added addSpacingNumberedLists parameter
+function formatHtml(html, addSpacingNumberedLists, addBorderRadius) { // Added addBorderRadius parameter
   // Return original HTML if window object is not defined (e.g., during Server-Side Rendering)
   if (typeof window === "undefined") return html; 
 
@@ -48,16 +48,17 @@ function formatHtml(html, addSpacingNumberedLists) { // Added addSpacingNumbered
     // Check if the current node is an H3 element
     if (node.nodeName === "H3") {
       const summary = doc.createElement("summary");
+      // Define base styles for the summary element
+      let summaryStyle = "padding:15px;margin-bottom:25px;cursor:pointer;background:#f9f7f0;";
+      // Conditionally add border-radius based on the addBorderRadius parameter
+      if (addBorderRadius) {
+        summaryStyle += "border-radius:10px;";
+      }
       // Apply inline styles to the summary element for visual presentation
-      summary.setAttribute(
-        "style",
-        "padding:15px;margin-bottom:25px;cursor:pointer;background:#f9f7f0;border-radius:10px;" // Added border-radius and changed cursor to pointer
-      );
-      // Replace specific text within the H3 content for the summary
-      summary.innerHTML = `<strong>${node.innerHTML.replace(
-        "Test AI chatbots",
-        "Experience chatbots"
-      )}</strong>`;
+      summary.setAttribute("style", summaryStyle);
+      // Assign the entire innerHTML of the H3 node to the summary, wrapped in <strong>
+      // This change ensures all content from the <h3> is included without specific replacements.
+      summary.innerHTML = `<strong>${node.innerHTML}</strong>`; 
       const details = doc.createElement("details");
       details.appendChild(summary);
 
@@ -233,6 +234,8 @@ export default function MarkdownToHtmlApp() {
   const [copied, setCopied] = useState(false);
   // State for custom spacing option for numbered lists, set to true by default
   const [addSpacingNumberedLists, setAddSpacingNumberedLists] = useState(true); // Enabled by default
+  // State for optional border-radius on summary element - now defaults to false
+  const [addBorderRadius, setAddBorderRadius] = useState(false); // Changed default to false
 
   // Memoized HTML output, re-calculates only when markdown or spacing options change
   const html = useMemo(() => {
@@ -243,8 +246,8 @@ export default function MarkdownToHtmlApp() {
     // Parse markdown to raw HTML
     const raw = marked.parse(markdown, { gfm: true });
     // Format the raw HTML using the custom formatHtml function, passing spacing options
-    return formatHtml(raw, addSpacingNumberedLists);
-  }, [markdown, addSpacingNumberedLists]);
+    return formatHtml(raw, addSpacingNumberedLists, addBorderRadius);
+  }, [markdown, addSpacingNumberedLists, addBorderRadius]); // Add addBorderRadius to dependencies
 
   // Handler for copying the HTML output to the clipboard
   const handleCopy = () => {
@@ -332,10 +335,10 @@ export default function MarkdownToHtmlApp() {
         </div>
       </div>
 
-      {/* Custom Spacing Options Section */}
+      {/* Custom Options Section */}
       <details className="w-full max-w-5xl mb-4 p-4 bg-white rounded-2xl shadow-lg border border-gray-200">
-        <summary className="font-bold text-lg cursor-pointer text-gray-800">Custom Spacing Options</summary>
-        <div className="mt-4">
+        <summary className="font-bold text-lg cursor-pointer text-gray-800">Custom Options</summary>
+        <div className="mt-4 space-y-2"> {/* Added space-y-2 for spacing between options */}
           <div className="flex items-center">
             <input
               type="checkbox"
@@ -345,6 +348,16 @@ export default function MarkdownToHtmlApp() {
               onChange={(e) => setAddSpacingNumberedLists(e.target.checked)}
             />
             <label htmlFor="spacing-numbered-lists" className="text-gray-700 select-none">Add 3 lines spacing after first-level numbered list items</label>
+          </div>
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="border-radius-summary"
+              className="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              checked={addBorderRadius}
+              onChange={(e) => setAddBorderRadius(e.target.checked)}
+            />
+            <label htmlFor="border-radius-summary" className="text-gray-700 select-none">Add rounded corners to section titles</label>
           </div>
         </div>
       </details>
