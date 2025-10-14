@@ -148,7 +148,16 @@ function formatHtml(html, addSpacingNumberedLists, addBorderRadius) { // Added a
     }
   });
 
-  // --- Step 3: Custom Line Spacing for transformed tables ---
+  // --- Step 3: Convert nested ordered lists to alphabetical type ---
+  const nestedOrderedLists = container.querySelectorAll('li > ol');
+  nestedOrderedLists.forEach(list => {
+    const typeAttr = list.getAttribute('type');
+    if (!typeAttr || typeAttr.trim().toLowerCase() === '1') {
+      list.setAttribute('type', 'a');
+    }
+  });
+
+  // --- Step 4: Custom Line Spacing for transformed tables ---
   // Helper function to add line spacing (br tags) around specified elements
   const addLineSpacing = (targetTagName, count = 1) => {
     const elements = container.querySelectorAll(targetTagName);
@@ -192,7 +201,7 @@ function formatHtml(html, addSpacingNumberedLists, addBorderRadius) { // Added a
   // Apply line spacing specifically to the tables created from blockquotes
   addLineSpacing('table');
 
-  // --- Step 4: Custom Line Spacing after first-level numbered list items ---
+  // --- Step 5: Custom Line Spacing after first-level numbered list items ---
   if (addSpacingNumberedLists) {
     const orderedLists = container.querySelectorAll('ol');
     orderedLists.forEach(ol => {

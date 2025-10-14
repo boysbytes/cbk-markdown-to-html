@@ -54,8 +54,6 @@
             overflow: hidden;
         }
 
-        .converter-header {}
-
         .converter-header h2 {
             font-size: 1.8rem;
             margin-bottom: 10px;
@@ -577,6 +575,7 @@
             tempDiv.innerHTML = html;
             createCollapsibleSections(tempDiv);
             processBlockquotes(tempDiv);
+            convertNestedOrderedLists(tempDiv);
 
             applyCustomSpacing(tempDiv, spacingConfig);
 
@@ -637,6 +636,16 @@
                 }
             });
         }
+            function convertNestedOrderedLists(container) {
+                const nestedLists = container.querySelectorAll('li > ol');
+                nestedLists.forEach(list => {
+                    const typeAttr = list.getAttribute('type');
+                    if (!typeAttr || typeAttr.trim().toLowerCase() === '1') {
+                        list.setAttribute('type', 'a');
+                    }
+                });
+            }
+
 
         function getElementType(element) {
             if (!element || !element.tagName) return 'unknown';
