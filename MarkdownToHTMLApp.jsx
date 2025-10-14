@@ -192,7 +192,30 @@ function formatHtml(html, addSpacingNumberedLists, addBorderRadius) { // Added a
   // Apply line spacing specifically to the tables created from blockquotes
   addLineSpacing('table');
 
-  // --- Step 4: Custom Line Spacing after first-level numbered list items ---
+  // --- Step 4: Convert nested ordered lists to alphabetical lists ---
+  // Helper function to check if an element is nested inside another list
+  const isNestedList = (element) => {
+    let parent = element.parentElement;
+    while (parent && parent !== container) {
+      if (parent.nodeName === 'LI') {
+        return true;
+      }
+      parent = parent.parentElement;
+    }
+    return false;
+  };
+
+  // Find all ordered lists in the document
+  const allOrderedLists = container.querySelectorAll('ol');
+  allOrderedLists.forEach(ol => {
+    // Check if this ordered list is nested (depth > 1)
+    if (isNestedList(ol)) {
+      // Set the type attribute to "a" for alphabetical numbering
+      ol.setAttribute('type', 'a');
+    }
+  });
+
+  // --- Step 5: Custom Line Spacing after first-level numbered list items ---
   if (addSpacingNumberedLists) {
     const orderedLists = container.querySelectorAll('ol');
     orderedLists.forEach(ol => {
