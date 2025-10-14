@@ -40,5 +40,6 @@ Use this to get productive quickly on this repo. Keep changes minimal, static-ho
 ### References
 - Writing: `.github/instructions/writing.instructions.md`
 - Markdown rules: `.github/instructions/markdown.instructions.md`
+- Design system: `.github/instructions/design_system.md`
 - Project overview: `README.md`
 

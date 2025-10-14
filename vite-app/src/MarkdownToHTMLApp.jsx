@@ -238,7 +238,21 @@ export default function MarkdownToHtmlApp() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center py-8 px-2 font-sans">
+    <>
+      <style>{`
+        :root{ --color-primary-500:#1969FF; --color-primary-600:#0052E0; --bg-primary:#FAFAFA; --bg-surface:#FFFFFF; --border-color:#E5E7EB; --text-primary:#171717; --text-secondary:#737373; }
+        .skip-link{position:absolute;left:-999px;top:auto;width:1px;height:1px;overflow:hidden}
+        .skip-link:focus,.skip-link:active{position:fixed;left:16px;top:16px;width:auto;height:auto;padding:8px 12px;background:var(--color-primary-500);color:#fff;border-radius:6px;box-shadow:0 4px 12px rgba(25,105,255,0.12);z-index:9999}
+        .app-root{min-height:100vh;background:var(--bg-primary);display:flex;flex-direction:column;align-items:center;padding:32px 8px;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial}
+        .card-grid{width:100%;max-width:960px;display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:32px}
+        textarea{border:1px solid var(--border-color);background:var(--bg-surface);color:var(--text-primary)}
+        .panel{background:var(--bg-surface);border:1px solid var(--border-color);border-radius:12px;padding:16px;box-shadow:0 6px 18px rgba(16,24,40,0.04)}
+        .panel summary{font-weight:700}
+        .copy-badge{background:#DCFCE7;color:#14532D;padding:6px 10px;border-radius:999px;font-size:12px}
+        @media (min-width:768px){ .card-grid{grid-template-columns:1fr 1fr} }
+      `}</style>
+      <a href="#markdown-input" className="skip-link">Skip to editor</a>
+      <div className="app-root">
       <h1 className="text-3xl font-bold mb-4 text-center text-gray-800">Markdown to HTML Converter</h1>
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         <div className="flex flex-col">
@@ -280,7 +294,7 @@ export default function MarkdownToHtmlApp() {
         </div>
       </div>
 
-      <details className="w-full max-w-5xl mb-4 p-4 bg-white rounded-2xl shadow-lg border border-gray-200">
+      <details className="w-full max-w-5xl mb-4 p-4 bg-white rounded-2xl shadow-lg border border-gray-200 panel">
         <summary className="font-bold text-lg cursor-pointer text-gray-800">Custom Options</summary>
         <div className="mt-4 space-y-2">
           <div className="flex items-center">
@@ -306,5 +320,6 @@ export default function MarkdownToHtmlApp() {
         </div>
       </details>
     </div>
+    </>
   );
 }

@@ -6,408 +6,287 @@
     <title>Markdown to HTML Converter (JavaScript)</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        /* Existing CSS from your provided HTML */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            /* Primary palette (light theme) - simplified from design system */
+            --color-primary-50: #E8F0FF;
+            --color-primary-100: #D1E1FF;
+            --color-primary-200: #A3C3FF;
+            --color-primary-300: #75A5FF;
+            --color-primary-400: #4787FF;
+            --color-primary-500: #1969FF; /* primary */
+            --color-primary-600: #0052E0;
+
+            --color-secondary-50: #FFF5ED;
+            --color-secondary-100: #FFEBDB;
+            --color-secondary-500: #FF9B4B; /* warm accent */
+
+            --color-neutral-50: #FAFAFA;
+            --color-neutral-100: #F5F5F5;
+            --color-neutral-200: #E5E7EB;
+            --color-neutral-300: #D1D9E0;
+            --color-neutral-500: #737373;
+            --color-neutral-700: #404040;
+            --color-neutral-900: #171717;
+
+            --bg-primary: var(--color-neutral-50);
+            --bg-surface: #FFFFFF;
+            --text-primary: var(--color-neutral-900);
+            --text-secondary: var(--color-neutral-500);
+            --border-color: var(--color-neutral-200);
+            --muted: #6b7280;
         }
 
+        /* Reset and layout */
+        * { box-sizing: border-box; }
+        html,body { height: 100%; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
             line-height: 1.5;
-            color: #1f2328;
-            background-color: #ffffff;
+            color: var(--text-primary);
+            background-color: var(--bg-primary);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
             min-height: 100vh;
+            padding: 24px 12px;
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
 
+        /* Skip link for keyboard users */
+        .skip-link {
+            position: absolute;
+            left: -999px;
+            top: auto;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+        }
+        .skip-link:focus,
+        .skip-link:active {
+            position: fixed;
+            left: 16px;
+            top: 16px;
+            width: auto;
+            height: auto;
+            padding: 8px 12px;
+            background: var(--color-primary-500);
+            color: white;
+            z-index: 9999;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(25,105,255,0.12);
+        }
+
         .header {
-            text-align: center;
-            margin-bottom: 32px;
-            padding: 24px 0;
-            border-bottom: 1px solid #d1d9e0;
+            text-align: left;
+            margin-bottom: 20px;
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            background: linear-gradient(180deg, var(--bg-surface), transparent);
+            border-radius: 10px;
         }
 
         .header h1 {
-            font-size: 2rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #1f2328;
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--text-primary);
         }
 
         .header p {
-            font-size: 1rem;
-            color: #656d76;
-            margin-bottom: 0;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin: 0;
         }
 
         .converter-section {
-            background: #ffffff;
-            border: 1px solid #d1d9e0;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
             border-radius: 12px;
             overflow: hidden;
-        }
-
-        .converter-header h2 {
-            font-size: 1.8rem;
-            margin-bottom: 10px;
+            box-shadow: 0 6px 18px rgba(16,24,40,0.04);
         }
 
         .instructions {
-            background: #f6f8fa;
+            background: var(--color-neutral-100);
             padding: 16px;
-            border-bottom: 1px solid #d1d9e0;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .instructions h3 {
-            color: #1f2328;
-            margin-bottom: 12px;
+            color: var(--text-primary);
+            margin-bottom: 8px;
             font-size: 1rem;
             font-weight: 600;
         }
 
-        .instructions ol {
-            margin-left: 16px;
-            color: #656d76;
-        }
+        .instructions ol { margin-left: 18px; color: var(--text-secondary); }
 
-        .instructions li {
-            margin-bottom: 4px;
-        }
+        .converter-body { padding: 20px; }
 
-        .converter-body {
-            padding: 24px;
-        }
-
-        .input-section {
-            margin-bottom: 16px;
-        }
+        .input-section { margin-bottom: 12px; }
 
         .input-section label {
             display: block;
             font-weight: 600;
             margin-bottom: 8px;
-            color: #1f2328;
+            color: var(--text-primary);
             font-size: 0.875rem;
         }
 
         .markdown-input {
             width: 100%;
-            height: 200px;
-            border: 1px solid #d1d9e0;
-            border-radius: 6px;
-            padding: 12px;
+            min-height: 220px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 14px;
             font-family: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
-            font-size: 12px;
+            font-size: 13px;
             resize: vertical;
-            transition: border-color 0.2s ease;
-            background-color: #ffffff;
+            transition: box-shadow 0.12s ease, border-color 0.12s ease;
+            background-color: var(--bg-surface);
+            color: var(--text-primary);
         }
 
-        .markdown-input:focus {
+        .markdown-input:focus,
+        .markdown-input:focus-visible {
             outline: none;
-            border-color: #0969da;
-            box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3);
+            border-color: var(--color-primary-500);
+            box-shadow: 0 6px 20px rgba(25,105,255,0.08), 0 0 0 4px rgba(25,105,255,0.12);
         }
 
         .convert-btn {
-            background: #28a745;
+            background: linear-gradient(90deg, var(--color-primary-400), var(--color-primary-500));
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 10px 18px;
+            border-radius: 10px;
             cursor: pointer;
-            transition: background 0.3s ease;
-            font-size: 1rem;
+            transition: transform 0.08s ease, box-shadow 0.12s ease;
+            font-size: 0.98rem;
+            font-weight: 600;
+            box-shadow: 0 6px 18px rgba(25,105,255,0.12);
         }
 
-        .convert-btn:hover {
-            background: #218838;
+        .convert-btn:hover { transform: translateY(-1px); }
+        .convert-btn:active { transform: translateY(0); }
+
+        .copy-btn { display: inline-block; margin: 0 0 10px 0; background: var(--color-secondary-500); }
+
+        /* Ensure buttons are keyboard-focus visible */
+        button:focus-visible,
+        .tab-btn:focus-visible,
+        .copy-btn:focus-visible {
+            outline: 3px solid rgba(25,105,255,0.18);
+            outline-offset: 2px;
         }
 
-        .copy-btn {
-            display: inline-block;
-            margin-top: 10px;
-            margin-bottom: 10px;
-        }
+        .output-section { display: none; margin-top: 24px; }
+        .output-section.show { display: block; }
 
-        .output-section {
-            display: none;
-            margin-top: 30px;
-        }
-
-        .output-section.show {
-            display: block;
-        }
-
-        .output-tabs {
-            display: flex;
-            border-bottom: 2px solid #e9ecef;
-            margin-bottom: 20px;
-        }
+        .output-tabs { display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 18px; gap:8px; }
 
         .tab-btn {
             flex: 1;
-            padding: 15px;
-            background: #f8f9fa;
-            border: none;
+            padding: 12px;
+            background: var(--color-neutral-100);
+            border: 1px solid var(--border-color);
             cursor: pointer;
             font-weight: 600;
-            color: #6c757d;
-            transition: all 0.3s ease;
+            color: var(--muted);
+            border-radius: 8px;
+            transition: all 0.15s ease;
         }
 
         .tab-btn.active {
-            background: white;
-            color: #4facfe;
-            border-bottom: 3px solid #4facfe;
+            background: linear-gradient(180deg, var(--bg-surface), #fbfdff);
+            color: var(--color-primary-600);
+            box-shadow: 0 6px 18px rgba(25,105,255,0.06);
+            border-bottom: 3px solid var(--color-primary-500);
         }
 
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
 
         .html-output {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
+            background: var(--color-neutral-100);
+            border: 1px solid var(--border-color);
             border-radius: 10px;
-            padding: 20px;
+            padding: 18px;
             font-family: 'Monaco', 'Consolas', monospace;
             font-size: 13px;
             white-space: pre-wrap;
-            max-height: 400px;
+            max-height: 560px;
             overflow-y: auto;
-            color: #495057;
+            color: var(--text-primary);
         }
 
         .html-preview {
-            border: 1px solid #e9ecef;
+            border: 1px solid var(--border-color);
             border-radius: 10px;
             padding: 20px;
-            max-height: 400px;
+            max-height: 560px;
             overflow-y: auto;
-            background: white;
+            background: var(--bg-surface);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
-            color: #333;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            color: var(--text-primary);
         }
 
-        .html-preview h1,
-        .html-preview h2,
-        .html-preview h3,
-        .html-preview h4,
-        .html-preview h5,
-        .html-preview h6 {
-            color: #1f2328;
-            margin-top: 1.5em;
-            margin-bottom: 0.8em;
-            line-height: 1.2;
-            font-weight: 600;
+        .html-preview h1, .html-preview h2, .html-preview h3, .html-preview h4, .html-preview h5, .html-preview h6 {
+            color: var(--text-primary);
+            margin-top: 1.2em;
+            margin-bottom: 0.6em;
+            line-height: 1.15;
+            font-weight: 700;
         }
 
-        .html-preview h1 {
-            font-size: 2.2em;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 0.3em;
-        }
+        .html-preview h1 { font-size: 1.8em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.25em; }
+        .html-preview h2 { font-size: 1.4em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.25em; }
+        .html-preview h3 { font-size: 1.15em; }
 
-        .html-preview h2 {
-            font-size: 1.8em;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 0.3em;
-        }
+        .html-preview p { margin-bottom: 1em; color: var(--text-primary); }
+        .html-preview a { color: var(--color-primary-600); text-decoration: none; }
+        .html-preview a:hover { text-decoration: underline; }
 
-        .html-preview h3 {
-            font-size: 1.5em;
-        }
+        .html-preview code { font-family: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, monospace; background-color: var(--color-neutral-100); border-radius: 4px; padding: 0.18em 0.36em; font-size: 0.9em; }
+        .html-preview pre { background-color: var(--color-neutral-100); border-radius: 8px; padding: 1em; overflow-x: auto; margin-bottom: 1em; }
 
-        .html-preview h4 {
-            font-size: 1.2em;
-        }
+        .html-preview blockquote { border-left: 0.25em solid var(--border-color); color: var(--muted); padding: 0 1em; margin: 0 0 1em; background: transparent; }
 
-        .html-preview h5 {
-            font-size: 1em;
-        }
+        .html-preview table { width: 100%; border-collapse: collapse; margin-bottom: 1em; background-color: var(--bg-surface); border-radius: 8px; }
+        .html-preview th, .html-preview td { border: 1px solid var(--border-color); padding: 0.6em 1em; text-align: left; }
+        .html-preview th { background-color: var(--color-neutral-100); font-weight: 700; }
 
-        .html-preview h6 {
-            font-size: 0.9em;
-            color: #6a737d;
-        }
+        .html-preview img { max-width: 100%; height: auto; display: block; }
 
-        .html-preview p {
-            margin-bottom: 1em;
-            color: #333;
-        }
+        /* Emoji blockquote styling kept visually consistent */
+        .html-preview .emoji-blockquote { border-style: none; width: 100%; max-width: 560px; height: auto; background-color: #ffe5b4; border-radius: 8px; margin: 10px 0; }
 
-        .html-preview ul,
-        .html-preview ol {
-            margin: 0 0 1em 2em;
-            padding: 0;
-        }
+        details { margin-bottom: 18px; }
+        summary { padding: 12px; margin-bottom: 18px; cursor: pointer; background-color: #f9f7f0; border-radius: 6px; font-weight: 700; }
+        summary:hover { background-color: #f0efe9; }
 
-        .html-preview ul li,
-        .html-preview ol li {
-            margin-bottom: 0.5em;
-        }
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; font-size: 1.05rem; color: var(--text-primary); display: none; }
+        .loading-spinner { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid var(--color-primary-500); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
 
-        .html-preview a {
-            color: #0366d6;
-            text-decoration: none;
-        }
+        @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg); } }
 
-        .html-preview a:hover {
-            text-decoration: underline;
-        }
+        .copy-success { display: inline-block; margin-left: 10px; font-size: 0.9rem; color: var(--color-primary-600); opacity: 0; visibility: hidden; transition: opacity 0.25s ease; }
+        .copy-success.show { opacity: 1; visibility: visible; }
 
-        .html-preview code {
-            font-family: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
-            background-color: #f6f8fa;
-            border-radius: 3px;
-            padding: 0.2em 0.4em;
-            font-size: 0.85em;
-            color: #36454F;
-        }
-
-        .html-preview pre {
-            background-color: #f6f8fa;
-            border-radius: 6px;
-            padding: 1em;
-            overflow-x: auto;
-            margin-bottom: 1em;
-        }
-
-        .html-preview pre code {
-            background-color: transparent;
-            padding: 0;
-            font-size: 1em;
-            color: #36454F;
-        }
-
-        .html-preview blockquote {
-            border-left: 0.25em solid #dfe2e5;
-            color: #6a737d;
-            padding: 0 1em;
-            margin: 0 0 1em;
-        }
-
-        .html-preview table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 1em;
-            background-color: #ffffff;
-            border-radius: 8px;
-        }
-
-        .html-preview th,
-        .html-preview td {
-            border: 1px solid #dfe2e5;
-            padding: 0.6em 1em;
-            text-align: left;
-        }
-
-        .html-preview th {
-            background-color: #f6f8fa;
-            font-weight: 600;
-        }
-
-        .html-preview img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-        }
-        
-        /* Emoji blockquote styling */
-        .html-preview .emoji-blockquote {
-            border-style: none;
-            width: 100%;
-            max-width: 560px;
-            height: auto;
-            background-color: #ffe5b4; /* peach background for emoji blockquote */
-            border-radius: 8px;
-            margin: 10px 0;
-        }
-
-        details {
-            margin-bottom: 20px;
-        }
-
-        summary {
-            padding: 15px;
-            margin-bottom: 25px;
-            cursor: pointer;
-            background-color: #f9f7f0;
-            border-radius: 5px;
-            font-weight: bold;
-        }
-
-        summary:hover {
-            background-color: #e0e0e0;
-        }
-
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.95);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            font-size: 1.2rem;
-            color: #333;
-            display: none;
-        }
-
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #28a745;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .copy-success {
-            display: inline-block;
-            margin-left: 10px;
-            font-size: 0.9rem;
-            color: #28a745;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-
-        .copy-success.show {
-            opacity: 1;
-            visibility: visible;
+        /* Small responsive tweaks */
+        @media (max-width: 800px) {
+            .output-tabs { flex-direction: column; }
+            .tab-btn { width: 100%; }
         }
     </style>
 </head>
 <body>
+    <a href="#markdown-input" class="skip-link">Skip to editor</a>
     <div id="loading-overlay" class="loading-overlay">
         <div class="loading-spinner"></div>
         <p>Converting Markdown to HTML...</p>
@@ -438,16 +317,16 @@
                     <textarea id="markdown-input" class="markdown-input" placeholder="# Hello World&#10;&#10;This is a sample markdown document."></textarea>
                 </div>
 
-                <button class="convert-btn" style="display: inline-block;" onclick="convertMarkdown()">Convert to HTML</button>
+                <button class="convert-btn" style="display: inline-block;" onclick="convertMarkdown()" aria-label="Convert markdown to HTML">Convert to HTML</button>
 
                 <div id="output-section" class="output-section">
-                    <div class="output-tabs">
-                        <button class="tab-btn active" onclick="showTab(event, 'html-code')">HTML Code</button>
-                        <button class="tab-btn" onclick="showTab(event, 'preview')">Preview</button>
+                    <div class="output-tabs" role="tablist" aria-label="Output tabs">
+                        <button class="tab-btn active" onclick="showTab(event, 'html-code')" role="tab" aria-controls="html-code" aria-selected="true">HTML Code</button>
+                        <button class="tab-btn" onclick="showTab(event, 'preview')" role="tab" aria-controls="preview" aria-selected="false">Preview</button>
                     </div>
 
                     <div id="html-code" class="tab-content active">
-                        <button class="copy-btn convert-btn" onclick="copyToClipboard()">Copy HTML</button>
+                        <button class="copy-btn convert-btn" onclick="copyToClipboard()" aria-label="Copy generated HTML to clipboard">Copy HTML</button>
                         <span class="copy-success" id="copy-success">Copied!</span>
                         <div id="html-output" class="html-output"></div>
                     </div>
@@ -637,13 +516,11 @@
             });
         }
             function convertNestedOrderedLists(container) {
-                const allOrderedLists = container.querySelectorAll('ol');
-                allOrderedLists.forEach(list => {
-                    if (list.closest('li')) {
-                        const typeAttr = list.getAttribute('type');
-                        if (!typeAttr || typeAttr.trim().toLowerCase() === '1') {
-                            list.setAttribute('type', 'a');
-                        }
+                const nestedLists = container.querySelectorAll('li > ol');
+                nestedLists.forEach(list => {
+                    const typeAttr = list.getAttribute('type');
+                    if (!typeAttr || typeAttr.trim().toLowerCase() === '1') {
+                        list.setAttribute('type', 'a');
                     }
                 });
             }
