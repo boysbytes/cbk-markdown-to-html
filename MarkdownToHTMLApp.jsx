@@ -149,13 +149,23 @@ function formatHtml(html, addSpacingNumberedLists, addBorderRadius) { // Added a
   });
 
   // --- Step 3: Convert nested ordered lists to alphabetical type ---
-  const nestedOrderedLists = container.querySelectorAll('li > ol');
-  nestedOrderedLists.forEach(list => {
-    const typeAttr = list.getAttribute('type');
-    if (!typeAttr || typeAttr.trim().toLowerCase() === '1') {
-      list.setAttribute('type', 'a');
+  // Use a recursive approach to catch all nested <ol> that are not top-level
+  function setAlphabeticalTypeForNestedLists(element, isTopLevel = true) {
+    if (element.nodeName === 'OL') {
+      if (!isTopLevel) {
+        const typeAttr = element.getAttribute('type');
+        if (!typeAttr || typeAttr.trim().toLowerCase() === '1') {
+          element.setAttribute('type', 'a');
+        }
+      }
+      // Recurse into children
+      Array.from(element.children).forEach(child => setAlphabeticalTypeForNestedLists(child, false));
+    } else if (element.nodeName === 'LI' || element.nodeName === 'UL') {
+      Array.from(element.children).forEach(child => setAlphabeticalTypeForNestedLists(child, false));
     }
-  });
+  }
+  // Only process direct children of the container
+  Array.from(container.children).forEach(child => setAlphabeticalTypeForNestedLists(child, true));
 
   // --- Step 4: Custom Line Spacing for transformed tables ---
   // Helper function to add line spacing (br tags) around specified elements
