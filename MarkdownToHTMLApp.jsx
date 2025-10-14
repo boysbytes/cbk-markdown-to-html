@@ -149,15 +149,13 @@ function formatHtml(html, addSpacingNumberedLists, addBorderRadius) { // Added a
   });
 
   // --- Step 3: Convert nested ordered lists to alphabetical type ---
-  // Use a recursive approach to catch all nested <ol> that are not top-level
-  // Set type="a" for any <ol> that is not a direct child of the container (i.e., not top-level)
-  const allOrderedLists = container.querySelectorAll('ol');
-  allOrderedLists.forEach(ol => {
-    if (ol.parentElement !== container) {
-      const typeAttr = ol.getAttribute('type');
-      if (!typeAttr || typeAttr.trim().toLowerCase() === '1') {
-        ol.setAttribute('type', 'a');
-      }
+  // Select ordered lists that are direct children of list items (nested lists)
+  // Set type="a" for any <ol> that is inside an <li> (nested list)
+  const nestedOrderedLists = container.querySelectorAll('li > ol');
+  nestedOrderedLists.forEach(ol => {
+    const typeAttr = ol.getAttribute('type');
+    if (!typeAttr || typeAttr.trim().toLowerCase() === '1') {
+      ol.setAttribute('type', 'a');
     }
   });
 
