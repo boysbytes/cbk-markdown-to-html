@@ -207,9 +207,12 @@ function formatHtml(html, addSpacingNumberedLists, addBorderRadius) { // Added a
 
   // Find all ordered lists in the document
   const allOrderedLists = container.querySelectorAll('ol');
+  console.log('Found ordered lists:', allOrderedLists.length);
   allOrderedLists.forEach(ol => {
+    console.log('Checking ol:', ol);
     // Check if this ordered list is nested (depth > 1)
     if (isNestedList(ol)) {
+      console.log('Setting type a on nested ol');
       // Set the type attribute to "a" for alphabetical numbering
       ol.setAttribute('type', 'a');
     }

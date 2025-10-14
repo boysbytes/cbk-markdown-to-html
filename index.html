@@ -640,9 +640,12 @@
         }
 
         function convertNestedOrderedLists(container) {
+            console.log('Converting nested ordered lists');
             const orderedLists = container.querySelectorAll('ol');
             orderedLists.forEach(ol => {
+                console.log('Checking ol:', ol);
                 if (isNestedList(ol)) {
+                    console.log('Setting type a on ol');
                     ol.setAttribute('type', 'a');
                 }
             });
