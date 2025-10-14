@@ -15,7 +15,7 @@ A small web application that converts Markdown to HTML for use with the Chumbaka
 
 ## Usage
 
-There are two simple ways to use this project:
+Two simple ways to use this project:
 
 - Run the source app locally (requires a React toolchain).
 - Use the files in `docs/` for static hosting (GitHub Pages, Netlify, or any static host).
@@ -38,11 +38,61 @@ npx http-server .\docs -p 8080
 
 ## Development
 
-If you want to modify the React source (`MarkdownToHTMLApp.jsx`) or rebuild the static `docs/` output, use a React build setup compatible with the original `react-colab` starter. A minimal workflow:
+This repository includes a minimal Vite project (in `vite-app/`) to make rebuilding the static `docs/` straightforward. Follow these steps when you want to implement changes:
 
-1. Create a small React project (for example, using Vite or Create React App).
-2. Copy `MarkdownToHTMLApp.jsx` into your `src/` and import it into your app entry point.
-3. Build the project and copy the production output into `docs/`.
+Edit source
+
+1. Open `MarkdownToHTMLApp.jsx` at the repository root and make your changes. The file exports a default React component; keep that contract so the build entry can render it unchanged.
+
+Build using the included Vite project
+
+1. From the repository root, change into the Vite app folder and install dependencies (only required the first time):
+
+```powershell
+cd .\vite-app
+npm install
+```
+
+2. Build the production output:
+
+```powershell
+npm run build
+# this produces a `dist/` folder inside `vite-app/`
+```
+
+3. Replace the tracked `docs/` folder with the new build and back up the existing `docs/` first. From the repository root:
+
+```powershell
+$ts = Get-Date -Format yyyyMMddHHmmss
+if (Test-Path docs) { Rename-Item docs docs-old-$ts }
+Move-Item vite-app/dist docs
+```
+
+Preview locally
+
+Serve the updated `docs/` with any static host (for quick preview):
+
+```powershell
+npx http-server .\docs -p 8080
+# then open http://localhost:8080
+```
+
+Commit and push
+
+When you are satisfied with the changes and the updated build, commit and push the relevant source and build files. Example:
+
+```powershell
+git add MarkdownToHTMLApp.jsx docs
+git commit -m "chore: update converter and rebuild docs"
+git push
+```
+
+Notes and recommendations
+
+- The Vite config (`vite-app/vite.config.js`) sets `base` to `/cbk-markdown-to-html/` so built asset URLs are correct for GitHub Pages when hosted under that path. If you deploy to a different path, update `base` before building.
+- The repository currently tracks `docs/` to make GitHub Pages deployment straightforward. If you prefer to build during CI and avoid tracking built files, add `docs/` to `.gitignore` and update your deployment pipeline.
+- Tailwind is not included in the minimal Vite build. If you need exact parity with prior styling, add Tailwind to the Vite project and rebuild.
+- I keep backups of replaced `docs/` folders as `docs-old-<timestamp>` when following the above Move-Item step.
 
 ## Troubleshooting
 
@@ -52,8 +102,3 @@ If you want to modify the React source (`MarkdownToHTMLApp.jsx`) or rebuild the 
 ## Contact
 
 For questions about this repository or integration tips, open an issue in this repository.
-
----
-Small, focused project — intended to be easy to host and embed in LMS workflows.
-
-
