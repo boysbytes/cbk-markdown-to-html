@@ -577,6 +577,7 @@
             tempDiv.innerHTML = html;
             createCollapsibleSections(tempDiv);
             processBlockquotes(tempDiv);
+            convertNestedOrderedLists(tempDiv);
 
             applyCustomSpacing(tempDiv, spacingConfig);
 
@@ -636,6 +637,26 @@
                     blockquote.parentNode.replaceChild(table, blockquote);
                 }
             });
+        }
+
+        function convertNestedOrderedLists(container) {
+            const orderedLists = container.querySelectorAll('ol');
+            orderedLists.forEach(ol => {
+                if (isNestedList(ol)) {
+                    ol.setAttribute('type', 'a');
+                }
+            });
+        }
+
+        function isNestedList(element) {
+            let parent = element.parentElement;
+            while (parent && parent !== container) {
+                if (parent.tagName === 'LI') {
+                    return true;
+                }
+                parent = parent.parentElement;
+            }
+            return false;
         }
 
         function getElementType(element) {
