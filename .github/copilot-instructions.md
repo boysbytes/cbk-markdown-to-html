@@ -37,6 +37,12 @@ Use this to get productive quickly on this repo. Keep changes minimal, static-ho
 - For new spacing cases, update `getElementType` and `spacingConfig` (vanilla) or extend targeted spacing in React; prefer `<br>` insertion over CSS margins to match LMS behavior.
 - GitHub Pages pathing: `docs/index.html` references assets under `/cbk-markdown-to-html/`. Preserve that base when rebuilding.
 
+### Agent Skill Alternative
+- **CBK Markdown Converter Skill**: `.github/skills/cbk-markdown-converter/SKILL.md`
+  - Enables AI agents to perform markdown-to-HTML conversions directly without the web UI
+  - Contains all transformation logic and algorithms
+  - Use when users need conversions done by AI rather than the standalone tools
+
 ### References
 - Writing: `.github/instructions/writing.instructions.md`
 - Markdown rules: `.github/instructions/markdown.instructions.md`

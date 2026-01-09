@@ -15,10 +15,24 @@ A small web application that converts Markdown to HTML for use with the Chumbaka
 
 ## Usage
 
-Two simple ways to use this project:
+Three simple ways to use this project:
 
-- Run the source app locally (requires a React toolchain).
-- Use the files in `docs/` for static hosting (GitHub Pages, Netlify, or any static host).
+1. **Web UI (Static)**: Use the files in `docs/` for static hosting (GitHub Pages, Netlify, or any static host).
+2. **Web UI (Local)**: Run the source app locally (requires a React toolchain).
+3. **AI Agent Skill**: Use the CBK Markdown Converter skill with AI coding agents to perform conversions directly.
+
+### AI Agent Skill
+
+The **CBK Markdown Converter Skill** (`.github/skills/cbk-markdown-converter/SKILL.md`) enables AI coding assistants like GitHub Copilot to perform markdown-to-HTML conversions directly without needing the web interface.
+
+**When to use**:
+- You're working with an AI coding agent
+- You need conversions done programmatically within your workflow
+- You want to batch convert markdown content
+- You're integrating conversions into automated processes
+
+**How to use**:
+Simply ask your AI agent: "Convert this markdown to HTML for Chumbaka LMS" and provide your markdown content. The agent will apply all the same transformations (H3 to collapsible sections, emoji blockquotes to styled tables, custom spacing, etc.).
 
 ### Quick start (static)
 
