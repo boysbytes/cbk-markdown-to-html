@@ -15,7 +15,78 @@ The following markdown content rules are enforced in the validators:
 6. **Tables**: Use markdown tables for tabular data. Ensure proper formatting and alignment.
 7. **Line Length**: Limit line length to 400 characters for readability.
 8. **Whitespace**: Use appropriate whitespace to separate sections and improve readability.
-9. **Front Matter**: Include YAML front matter at the beginning of the file with required metadata fields.
+9. **Front Matter**: Include YAML front matter at the beginning of every file with all required metadata fields as defined below.
+
+## Front Matter
+
+Every Markdown file must begin with a YAML front matter block. Three fields are always required; all other fields are optional and vary by use case.
+
+### Required fields
+
+| Field | Type | Description |
+|---|---|---|
+| `title` | string | Full descriptive title of the document, in quotes. |
+| `description` | string | One-sentence summary of the document's content or learning goal. |
+| `target_audience` | string | Intended audience (e.g. `"13-17 year old students"`, `"Students (13–17)"`). |
+
+### Optional fields
+
+Include only the fields relevant to the document. Common examples:
+
+| Field | Type | Description |
+|---|---|---|
+| `purpose` | string | High-level purpose. Use `lesson`, `reference`, `guide`, or `template`. |
+| `project` | string | Project identifier (e.g. `A`, `B`, `C`). |
+| `lesson_id` | string | Unique lesson identifier (e.g. `C1`, `A3`). |
+| `type` | string | Document type. Use `Class`, `Lab`, `Slide`, `Notes`, or `Other`. |
+| `version` | string | Semantic version string (e.g. `v1.0`). |
+| `last_updated` | date | Date of last update in `YYYY-MM-DD` format. |
+| `lesson` | integer | Lesson number within a sequence. |
+| `duration` | integer | Estimated duration in minutes. |
+| `tags` | list | List of relevant topic tags. |
+| `lesson_reference` | string | Filename of a related lesson document. |
+
+### Examples
+
+Standalone lesson note:
+
+```yaml
+---
+title: "Define Data-Driven Problems"
+description: "Turn your Design Thinking problem into a measurable data science question, identify needed data, and decide if machine learning fits."
+target_audience: "Students (13–17)"
+last_updated: 2025-12-30
+lesson: 3
+tags: ["data-driven", "define", "problem-formulation"]
+---
+```
+
+Webinar session:
+
+```yaml
+---
+title: "From Human Problems to Data-Driven Solutions"
+description: "Interactive webinar teaching participants how to translate Design Thinking problems into measurable data science questions."
+target_audience: "Students (13–17)"
+duration: 60
+lesson_reference: "03-dt-proto-defining-data-driven-problems.md"
+---
+```
+
+Class or Lab lesson file:
+
+```yaml
+---
+title: "C1 Class - Text Patterns and n-gram Models"
+description: "Introduction to text prediction through pattern recognition and frequency analysis."
+target_audience: "13-17 year old students"
+purpose: "lesson"
+project: "C"
+lesson_id: "C1"
+type: "Class"
+version: "v1.0"
+---
+```
 
 ## Formatting and Structure
 

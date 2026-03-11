@@ -17,6 +17,8 @@ These are our documentation writing style guidelines.
 - Talk like a person.
 - Simpler is better.
 - Be brief. Give customers just enough information to make decisions confidently. Prune every excess word.
+- Remove framing sentences. Start directly with the substance.
+- Avoid mid-sentence elaborations. If a detail matters, write it as its own sentence.
 
 ## Grammar
 - Use present tense verbs (is, open) instead of past tense (was, opened).
@@ -27,6 +29,7 @@ These are our documentation writing style guidelines.
 - Avoid multiple -ing words that can create ambiguity.
 - Keep prepositional phrases simple and clear.
 - Place modifiers close to what they modify.
+- Cut adverbs that do not change the meaning of the sentence.
 
 ## Numbers
 - Spell out numbers for zero through nine, unless space is limited. Use numerals for 10 and above.
@@ -41,6 +44,7 @@ These are our documentation writing style guidelines.
 - Avoid semicolons - use separate sentences instead.
 - Use question marks sparingly.
 - Don't use slashes (/) - use "or" instead.
+- Do not use em dashes (—). Use a comma or start a new sentence instead.
 - Prefer single over double quotes, avoiding typographic quotes.
 - Only use apostrophe (U+0027) and quotes (U+0022), not left or right single or double quotation marks.
 
