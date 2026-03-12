@@ -473,6 +473,35 @@ def _add_details_spacing(container: Tag, soup: BeautifulSoup) -> None:
         last.append(soup.new_tag("br"))
 
 
+def _add_sub_list_spacing(container: Tag, soup: BeautifulSoup) -> None:
+    """Add 2 <br> tags at the end of each non-last <li> in nested <ol> (sub-numbered lists).
+
+    Targets only <ol> elements that are direct children of <li> (i.e. the
+    alphabetical sub-lists produced by Transform 3).  Each non-last sub-item
+    gets 2 trailing <br> tags for visual breathing room inside long steps.
+    """
+    for ol in container.find_all("ol"):
+        # Only target nested lists (parent is an <li>)
+        if not (ol.parent and ol.parent.name == "li"):
+            continue
+
+        items = [c for c in ol.children if isinstance(c, Tag) and c.name == "li"]
+        for li in items[:-1]:  # every item except the last
+            # Count trailing <br> tags already present
+            br_count = 0
+            node = li.contents[-1] if li.contents else None
+            while node:
+                if isinstance(node, Tag) and node.name == "br":
+                    br_count += 1
+                    node = node.previous_sibling
+                elif isinstance(node, NavigableString) and not node.strip():
+                    node = node.previous_sibling
+                else:
+                    break
+            for _ in range(max(0, 2 - br_count)):
+                li.append(soup.new_tag("br"))
+
+
 def _add_list_spacing(container: Tag, soup: BeautifulSoup) -> None:
     """Add 3 <br> tags at the end of each non-last first-level <li> in <ol>."""
     for ol in container.find_all("ol"):
@@ -545,6 +574,7 @@ def convert(
     _add_table_spacing(container, soup)
     if add_list_spacing:
         _add_list_spacing(container, soup)
+    _add_sub_list_spacing(container, soup)
     _add_details_spacing(container, soup)
 
     return container.decode_contents()

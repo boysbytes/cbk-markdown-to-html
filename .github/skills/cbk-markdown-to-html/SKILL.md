@@ -55,6 +55,7 @@ html = convert(markdown_text)
 | 3 | Nested OL alpha | `<li><ol><li>…` | `<li><ol type="a"><li>…` |
 | 4 | Table spacing | `…<table>…` | `…<br><table>…<br>` |
 | 4 | List spacing | `<li>item</li><li>` | `<li>item<br><br><br></li><li>` |
+| 4 | Sub-list spacing | non-last `<li>` inside nested `<ol type="a">` | append `<br><br>` at end of each non-last sub-item |
 | 5 | Section trailing spacing | last element in each non-last `<details>` | append `<br><br><br>` inside section |
 | 5 | Last section trailing | last element in last `<details>` | append `<br><br>` inside section |
 
@@ -190,6 +191,7 @@ See full algorithm and examples in [cbk-transforms.md](references/cbk-transforms
 - [ ] 3 `<br>` appended inside each non-last `<details>` element (after its last child, before `</details>`)
 - [ ] Last `<details>` element has `<br><br>` appended inside (before `</details>`)
 - [ ] (if enabled) 3 `<br>` at end of each non-last top-level `<li>` in `<ol>`
+- [ ] 2 `<br>` at end of each non-last `<li>` inside nested `<ol type="a">` (sub-numbered items)
 - [ ] Fenced code blocks inside list items and blockquotes render as `<pre><code>` (not raw backtick text)
 - [ ] Output written to `.html` file on disk
 

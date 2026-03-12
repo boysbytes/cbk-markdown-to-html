@@ -466,11 +466,42 @@ For each top-level <ol> (parent is NOT an <li>):
 <li>First item<br><br><br></li>
 ```
 
+### C. Sub-List Item Spacing (always applied)
+
+Add 2 `<br>` tags at the end of each non-last `<li>` in nested `<ol>` elements (alphabetical sub-lists created by Transform 3).
+
+```
+For each nested <ol> (parent is an <li>):
+  For each direct <li> child EXCEPT the last:
+    Count existing trailing <br> tags in li
+    If count < 2: append (2 - count) <br> tags
+```
+
+This applies unconditionally — it is not controlled by a configuration option.
+
+**Example:**
+
+```html
+<!-- Input: sub-numbered items a, b, c inside a parent <li> -->
+<ol type="a">
+  <li><p><strong>STEP 1:</strong></p><p>Do the first thing.</p></li>
+  <li><p><strong>STEP 2:</strong></p><p>Do the second thing.</p></li>
+  <li><p><strong>STEP 3:</strong></p><p>Do the third thing.</p></li>
+</ol>
+
+<!-- Output: 2 <br> appended after each non-last sub-item -->
+<ol type="a">
+  <li><p><strong>STEP 1:</strong></p><p>Do the first thing.</p><br><br></li>
+  <li><p><strong>STEP 2:</strong></p><p>Do the second thing.</p><br><br></li>
+  <li><p><strong>STEP 3:</strong></p><p>Do the third thing.</p></li>
+</ol>
+```
+
 ### Advanced Spacing
 
 For precise element-to-element spacing matching the vanilla web tool (40+ element-pair rules), see [advanced-spacing.md](advanced-spacing.md).
 
-### C. Section Trailing Spacing (always applied)
+### D. Section Trailing Spacing (always applied)
 
 Append 3 `<br>` tags at the end of content inside each **non-last** `<details>` element, and 2 `<br>` at the end of the **last** `<details>` element.  All `<br>` tags go **inside** the `<details>` so they are only visible when a section is expanded, and do not create blank gaps between collapsed section headers.
 
