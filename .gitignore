@@ -31,4 +31,4 @@ Thumbs.db
 *.temp
 
 # Examples for testing
-examples-for-test/
+examples-for-test/*
