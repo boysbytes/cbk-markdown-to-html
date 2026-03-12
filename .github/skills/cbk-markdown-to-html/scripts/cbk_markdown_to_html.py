@@ -51,8 +51,27 @@ try:
     from bs4 import BeautifulSoup, NavigableString, Tag
 except ImportError:
     sys.exit(
-        "Missing dependencies. Run:  pip install markdown beautifulsoup4"
+        "Missing dependencies. Run:  pip install markdown beautifulsoup4 pygments"
     )
+
+try:
+    from pygments import highlight as _pygments_highlight
+    from pygments.lexers import get_lexer_by_name as _get_lexer_by_name
+    from pygments.util import ClassNotFound as _ClassNotFound
+    from pygments.formatters import HtmlFormatter as _HtmlFormatter
+    _PYGMENTS_AVAILABLE = True
+except ImportError:
+    _PYGMENTS_AVAILABLE = False
+
+# Syntax highlighting constants (mirrors the syntax-highlighter skill defaults)
+_SYN_STYLE = "default"
+_SYN_DIVSTYLES = "border:solid gray;border-width:.0em .0em .0em .8em;padding:.2em .6em;"
+_SYN_PRE = "margin: 0; font-size: 12pt"
+_SYN_WRAP = "overflow:auto;width:auto;"
+# Languages to highlight; anything not in this set is left as plain <pre><code>
+_SYN_HIGHLIGHT_LANGS = {"python", "arduino", "cpp", "markdown", "md"}
+# Languages whose code blocks are intentionally left unstyled (plain monospace)
+_SYN_SKIP_LANGS = {"text"}
 
 # Matches leading Unicode emoji sequences (Python surrogate-free ranges).
 # Covers: supplementary plane emoji, misc symbols, variation selectors, ZWJ, keycap.
@@ -623,6 +642,70 @@ def _add_list_spacing(container: Tag, soup: BeautifulSoup) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Syntax highlighting (step 8)
+# ---------------------------------------------------------------------------
+
+def _apply_syntax_highlighting(html: str) -> str:
+    """Replace ``<pre><code class="language-X">`` blocks with Pygments inline-CSS HTML.
+
+    Only languages listed in ``_SYN_HIGHLIGHT_LANGS`` are processed.  Blocks
+    with ``language-text`` or an unknown language label are left unchanged.
+    Blocks with no language class are also left unchanged.
+
+    Requires Pygments (``pip install pygments``).  If Pygments is not
+    installed, ``_PYGMENTS_AVAILABLE`` is ``False`` and this function should
+    not be called.
+    """
+    soup = BeautifulSoup(f"<div>{html}</div>", "html.parser")
+    container = soup.find("div")
+
+    formatter = _HtmlFormatter(
+        style=_SYN_STYLE,
+        linenos=False,
+        noclasses=True,
+        cssclass="",
+        cssstyles=_SYN_WRAP + _SYN_DIVSTYLES,
+        prestyles=_SYN_PRE,
+    )
+
+    for pre_tag in container.find_all("pre"):
+        code_tag = pre_tag.find("code")
+        if not code_tag:
+            continue
+
+        # Determine language from class, e.g. "language-cpp" → "cpp"
+        classes = code_tag.get("class") or []
+        lang = ""
+        for cls in classes:
+            if cls.startswith("language-"):
+                lang = cls[len("language-"):].lower()
+                break
+
+        if not lang or lang in _SYN_SKIP_LANGS:
+            continue
+        if lang not in _SYN_HIGHLIGHT_LANGS:
+            continue
+
+        # Resolve lexer (arduino falls back to cpp)
+        actual_lang = "cpp" if lang == "arduino" else lang
+        try:
+            lexer = _get_lexer_by_name(actual_lang)
+        except _ClassNotFound:
+            continue
+
+        # .get_text() decodes HTML entities so Pygments receives clean source code
+        code_text = code_tag.get_text()
+
+        highlighted = _pygments_highlight(code_text, lexer, formatter)
+
+        # Replace the <pre> tag in-place with the Pygments HTML fragment
+        highlighted_soup = BeautifulSoup(highlighted, "html.parser")
+        pre_tag.replace_with(highlighted_soup)
+
+    return container.decode_contents()
+
+
+# ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
@@ -675,7 +758,10 @@ def convert(
     _add_sub_list_spacing(container, soup)
     _add_details_spacing(container, soup)
 
-    return container.decode_contents()
+    html = container.decode_contents()
+    if _PYGMENTS_AVAILABLE:
+        html = _apply_syntax_highlighting(html)
+    return html
 
 
 # ---------------------------------------------------------------------------

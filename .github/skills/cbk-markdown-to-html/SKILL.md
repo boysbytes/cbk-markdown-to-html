@@ -15,7 +15,7 @@ Script at `scripts/cbk_markdown_to_html.py`:
 
 ```bash
 # Install dependencies once
-pip install markdown beautifulsoup4
+pip install markdown beautifulsoup4 pygments
 
 # Convert a file — output defaults to input filename with .html extension
 python cbk_markdown_to_html.py input.md
@@ -59,6 +59,7 @@ html = convert(markdown_text)
 | 4c | Sub-list spacing | non-last `<li>` inside nested `<ol type="a">` | append `<br><br>` at end of each non-last sub-item |
 | 5 | Section trailing spacing | last element in each non-last `<details>` | append `<br><br><br>` inside section |
 | 5 | Last section trailing | last element in last `<details>` | append `<br><br>` inside section |
+| 8 | Syntax highlighting | `<pre><code class="language-X">` where X ∈ {python, arduino, cpp, markdown} | Pygments inline-CSS HTML block (requires `pygments`; `language-text` and unknown languages left as plain `<pre><code>`) |
 
 Full rules, examples, and edge cases: [cbk-transforms.md](references/cbk-transforms.md).
 
