@@ -1,6 +1,87 @@
 # CBK Transform Rules
 
-Complete rules, algorithms, and input/output examples for all four Chumbaka LMS transforms.
+Complete rules, algorithms, and input/output examples for all CBK Chumbaka LMS transforms.
+
+## Pre-processing (before markdown parsing)
+
+Apply these steps to the raw markdown string **before** passing it to the markdown parser.
+
+### Step 0a: Strip YAML front matter
+
+Remove the YAML front matter block (delimited by `---` lines) at the start of the file.
+
+```
+Pattern: ^---\s*\n.*?\n---\s*\n  (DOTALL, at start of string)
+```
+
+If no front matter is present, the text is unchanged.
+
+### Step 0b: Pre-process fenced code blocks in list items and blockquotes
+
+Python's `markdown.extensions.fenced_code` extension does not reliably handle:
+- Fenced code blocks indented inside list items (blank lines inside the block break it).
+- Fenced code blocks prefixed with `>` inside blockquotes (parsed as inline code).
+
+**Detection:**
+- **List-item block:** Line matches `^( {4,})(```+|~~~+)(\S*)$` (4+ leading spaces).
+- **Blockquote block:** Line matches `^(>+ *)(```+|~~~+)(\S*)$` (blockquote prefix).
+
+**Algorithm:**
+1. Replace each such fenced block with a unique placeholder token (e.g. `CBKCODE0PLACEHOLDER`) at the same indentation/prefix level.
+2. After markdown parsing, replace `<p>TOKEN</p>` (with optional whitespace) with the corresponding `<pre><code class="language-LANG">…</code></pre>` HTML.
+3. Strip only the fence-prefix indentation from code lines; preserve relative indentation within the block.
+4. Escape `&`, `<`, `>` inside the code block.
+
+### Step 0c: Separate consecutive blockquotes
+
+Some parsers (including Python's `markdown` library) merge two adjacent blockquote blocks into one `<blockquote>` element when they are separated by a blank line. To prevent this, inject an HTML comment between them before parsing.
+
+**Detection:** Two or more groups of consecutive `>` lines where the groups are separated by one or more blank lines.
+
+**Algorithm:**
+1. Split the markdown into lines.
+2. Track when a `> `-prefixed block ends (a line that starts with `>` followed by a blank line).
+3. If the next non-blank line also starts with `>`, insert `<!-- blockquote-break -->` between the two groups.
+4. After markdown parsing, remove any `<!-- blockquote-break -->` that may appear in the output.
+
+```
+Before:
+> Learning objectives line 1
+> - item 1
+
+> ⚠️ Board compatibility paragraph
+
+After:
+> Learning objectives line 1
+> - item 1
+
+<!-- blockquote-break -->
+
+> ⚠️ Board compatibility paragraph
+```
+
+### Step 0d: Fix heading + list in blockquotes
+
+Some parsers do not create a `<ul>` out of list markers (`- `) that follow a non-list line inside a blockquote unless there is a blank line between them. This causes both the heading text and the list items to appear in a single merged `<p>` tag.
+
+**Detection:** Inside a blockquote block (consecutive lines starting with `>`), a non-list line is immediately followed by a line starting with `> - ` or `> * ` (with no blank blockquote line between them).
+
+**Algorithm:**
+1. Scan each blockquote block line by line.
+2. When a non-list `>` line is immediately followed by a `> - ` or `> * ` line, insert an empty blockquote line `>` between them.
+
+```
+Before:
+> **Learning objectives**
+> - Explain what capacitance is...
+
+After:
+> **Learning objectives**
+>
+> - Explain what capacitance is...
+```
+
+---
 
 ## Transform 1: H3 to Collapsible Sections
 
@@ -62,6 +143,26 @@ Output:
 - **Multiple consecutive H3s**: Each becomes a separate `<details>` — no siblings are collected for each.
 - **H3 with inline formatting**: Content is moved verbatim into `<strong>`. Example: `<h3><code>myFunc()</code></h3>` → `<summary><strong><code>myFunc()</code></strong></summary>`.
 - **H1/H2 headings**: Not affected. Only `<h3>` triggers this transform.
+- **Blockquote or callout table after a list**: If a `<blockquote>` or emoji callout table appears after the list but before the next `<h3>`, it is **inside** the same `<details>` block. Do not stop collecting siblings at the end of a list.
+
+  ```html
+  <!-- Input (after markdown parse) -->
+  <h3>Step 1</h3>
+  <ol>…</ol>
+  <blockquote>💡 tip text</blockquote>   ← still belongs to Step 1
+  <h3>Step 2</h3>
+
+  <!-- Output -->
+  <details>
+    <summary>…Step 1…</summary>
+    <ol>…</ol>
+    <table class="emoji-blockquote">…</table>   ← inside Step 1 <details>
+  </details>
+  <details>
+    <summary>…Step 2…</summary>
+    …
+  </details>
+  ```
 
 ---
 
@@ -173,6 +274,117 @@ Output HTML:
 
 ---
 
+## Transform 2b: Non-Emoji Blockquotes to Bordered Tables
+
+A `<blockquote>` whose content does **not** start with an emoji becomes a single-column white-background bordered table.
+
+### Detection
+
+Test whether Transform 2 (emoji callout) applies. If the blockquote's first child element does **not** start with an emoji character, apply Transform 2b instead.
+
+### Algorithm
+
+```
+For each <blockquote> that is NOT an emoji blockquote:
+  1. Create <table style="border-collapse: collapse; width: 100%; background-color: #ffffff;"
+          border="1" cellpadding="20">
+  2. Wrap all content in a single <td style="width: 100%;">
+  3. For each child element of the blockquote:
+     a. Bold-only paragraph: <p><strong>…</strong></p> or <p><strong>…:</strong></p>
+        → render as <p><strong>heading text</strong></p>
+           (strip trailing colon from heading text if present)
+     b. <ul> or <ol> list:
+        → convert to nested structure (see below)
+     c. Any other element: include as-is
+  4. Replace <blockquote> with the <table>
+```
+
+### List Conversion (nested structure)
+
+Each `<ul>` or `<ol>` child of the blockquote becomes a nested list inside the table cell:
+
+```html
+<ul>
+<li style="list-style-type: none;">
+<ul>
+<li aria-level="1">First item text</li>
+<li aria-level="1">Second item text</li>
+</ul>
+</li>
+</ul>
+```
+
+Preserve all inline HTML inside list item text (bold, code, links, math, etc.) without alteration.
+
+### Bold-Only Paragraph Detection
+
+A `<p>` is considered bold-only (treated as a heading) if its entire text content is wrapped in a single `<strong>` element and contains no other block-level children.
+
+Strip a trailing `:` from the text when rendering, so `**Learning objectives:**` and `**Learning objectives**` both become `<p><strong>Learning objectives</strong></p>`.
+
+### Styles Summary
+
+| Element | Style / Attributes |
+|---------|-------------------|
+| `<table>` | `style="border-collapse: collapse; width: 100%; background-color: #ffffff;"` `border="1"` `cellpadding="20"` |
+| `<td>` | `style="width: 100%;"` |
+
+### Example
+
+Input markdown:
+
+```markdown
+> **Learning objectives**
+> - Explain what capacitance is and how the sensor works.
+> - Describe how soil moisture affects a capacitive sensor reading.
+> - Calibrate a sensor by recording values for dry and wet conditions.
+```
+
+Intermediate HTML (after markdown parse + pre-processing):
+
+```html
+<blockquote>
+  <p><strong>Learning objectives</strong></p>
+  <ul>
+    <li>Explain what capacitance is and how the sensor works.</li>
+    <li>Describe how soil moisture affects a capacitive sensor reading.</li>
+    <li>Calibrate a sensor by recording values for dry and wet conditions.</li>
+  </ul>
+</blockquote>
+```
+
+Output HTML:
+
+```html
+<table style="border-collapse: collapse; width: 100%; background-color: #ffffff;" border="1" cellpadding="20">
+<tbody>
+<tr>
+<td style="width: 100%;">
+<p><strong>Learning objectives</strong></p>
+<ul>
+<li style="list-style-type: none;">
+<ul>
+<li aria-level="1">Explain what capacitance is and how the sensor works.</li>
+<li aria-level="1">Describe how soil moisture affects a capacitive sensor reading.</li>
+<li aria-level="1">Calibrate a sensor by recording values for dry and wet conditions.</li>
+</ul>
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+```
+
+### Edge Cases
+
+- **No list, only paragraphs**: All `<p>` children are included as-is. The table still wraps them.
+- **Bold heading + regular paragraph**: Bold-only `<p>` becomes heading; remaining `<p>` children are included unchanged.
+- **Inline code in list items**: `<code>text</code>` is preserved without alteration.
+- **Emoji NOT at the very start**: A blockquote like `> ⚠️ **Warning:**` starts with an emoji and is handled by Transform 2 (emoji callout), not Transform 2b.
+
+---
+
 ## Transform 3: Nested List Alphabetical Numbering
 
 Ordered lists that are direct children of `<li>` elements get `type="a"` for alphabetical numbering.
@@ -257,3 +469,31 @@ For each top-level <ol> (parent is NOT an <li>):
 ### Advanced Spacing
 
 For precise element-to-element spacing matching the vanilla web tool (40+ element-pair rules), see [advanced-spacing.md](advanced-spacing.md).
+
+### C. Section Trailing Spacing (always applied)
+
+Append 3 `<br>` tags at the end of content inside each **non-last** `<details>` element, and 2 `<br>` at the end of the **last** `<details>` element.  All `<br>` tags go **inside** the `<details>` so they are only visible when a section is expanded, and do not create blank gaps between collapsed section headers.
+
+```
+For each <details> that is NOT the last:
+  Append <br><br><br> before </details>
+
+For the last <details>:
+  Append <br><br> before </details>
+```
+
+**Example:**
+
+```html
+<!-- Non-last section -->
+<details>
+  <summary>…Step 1…</summary>
+  <ol>…</ol>
+  <br><br><br>
+</details>
+<details>
+  <summary>…Step 4 (last)…</summary>
+  <ol>…</ol>
+  <br><br>
+</details>
+```

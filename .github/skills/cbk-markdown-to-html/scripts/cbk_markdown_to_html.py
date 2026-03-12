@@ -2,18 +2,33 @@
 """
 cbk_markdown_to_html.py — Convert Markdown to HTML for Chumbaka LMS.
 
-Transforms applied in order:
+Pre-processing steps (before markdown parsing):
+  0a. Strip YAML front matter (--- delimited block at start of file)
+  0b. Convert indented fenced code blocks inside list items to raw HTML <pre><code>
+      (Python markdown's fenced_code extension does not handle these reliably)
+  0c. Separate consecutive blockquote blocks with an HTML comment so the
+      parser produces separate <blockquote> elements instead of merging them.
+  0d. Insert a blank blockquote line between a non-list blockquote line and an
+      immediately following list line so parser creates <p> + <ul> not merged <p>.
+
+Transforms applied in order (after markdown parsing):
   1. <h3> → <details><summary> collapsible sections
   2. Emoji <blockquote> → styled <table class="emoji-blockquote">
+  2b. Non-emoji <blockquote> → bordered <table> with nested list structure
   3. Nested <ol> inside <li> → type="a"
   4. <br> spacing around <table> elements
   5. (optional) 3 <br> tags after each non-last first-level <ol> <li>
+  6. 3 <br> between consecutive <details> elements
+  7. 2 <br> appended at end of last <details> element
 
 Dependencies:
   pip install markdown beautifulsoup4
 
 Usage:
-  python cbk_markdown_to_html.py input.md [output.html] [--no-list-spacing] [--border-radius]
+  python cbk_markdown_to_html.py input.md              # writes input.html
+  python cbk_markdown_to_html.py input.md output.html  # explicit output path
+  python cbk_markdown_to_html.py input.md --no-list-spacing
+  python cbk_markdown_to_html.py input.md --border-radius
 
 Import as module:
   from cbk_markdown_to_html import convert
@@ -40,6 +55,192 @@ except ImportError:
 _EMOJI_RE = re.compile(
     r"^([\U0001F300-\U0001FFFF\u231A-\u32FF\u2600-\u27BF\uFE0F\u200D\u20E3]+)\s*"
 )
+
+
+# ---------------------------------------------------------------------------
+# Pre-processing helpers
+# ---------------------------------------------------------------------------
+
+def _strip_front_matter(text: str) -> str:
+    """Strip YAML front matter (delimited by --- lines) from the start of a markdown string."""
+    m = re.match(r"^---\s*\n.*?\n---\s*\n", text, re.DOTALL)
+    if m:
+        return text[m.end():]
+    return text
+
+
+def _separate_consecutive_blockquotes(text: str) -> str:
+    """Insert a separator between adjacent blockquote blocks to prevent the parser
+    from merging them into a single <blockquote> element.
+
+    Two consecutive groups of '>' prefixed lines separated by blank lines
+    will be given an HTML comment separator so Python's markdown library
+    creates two distinct <blockquote> elements.
+    """
+    lines = text.split("\n")
+    result: list[str] = []
+    i = 0
+    while i < len(lines):
+        result.append(lines[i])
+        # If this line is a blockquote line, look ahead
+        if lines[i].startswith(">"):
+            # Collect following blank lines
+            j = i + 1
+            blank_count = 0
+            while j < len(lines) and lines[j].strip() == "":
+                j += 1
+                blank_count += 1
+            # If blank lines found and next non-blank line is also a blockquote
+            if blank_count > 0 and j < len(lines) and lines[j].startswith(">"):
+                # Emit the blank lines, then a separator, then continue
+                for _ in range(blank_count):
+                    result.append("")
+                result.append("<!-- blockquote-break -->")
+                i = j
+                continue
+        i += 1
+    return "\n".join(result)
+
+
+def _fix_blockquote_heading_list(text: str) -> str:
+    """Insert a blank blockquote line between a non-list blockquote line and an
+    immediately following list marker line inside the same blockquote block.
+
+    This ensures the markdown parser produces a <p> followed by a <ul> rather
+    than merging them into a single <p> element.
+    """
+    lines = text.split("\n")
+    result: list[str] = []
+    for i, line in enumerate(lines):
+        result.append(line)
+        if not line.startswith(">"):
+            continue
+        # Look ahead for a list marker line
+        if i + 1 >= len(lines):
+            continue
+        next_line = lines[i + 1]
+        if not next_line.startswith(">"):
+            continue
+        # Current line is a blockquote line but NOT a list item
+        stripped_current = re.sub(r"^>+\s*", "", line)
+        if re.match(r"^[-*]\s", stripped_current):
+            continue  # current is already a list item
+        # Next line IS a list item
+        stripped_next = re.sub(r"^>+\s*", "", next_line)
+        if re.match(r"^[-*]\s", stripped_next):
+            # Insert a blank blockquote line between them
+            result.append(">")
+    return "\n".join(result)
+
+
+def _preprocess_fenced_code_in_lists(text: str) -> tuple[str, dict[str, str]]:
+    """Replace fenced code blocks that Python markdown cannot handle with placeholders.
+
+    Two cases are covered:
+
+    1. **Indented fenced blocks** (inside list items) — indented by 4+ spaces.
+       Python markdown's fenced_code extension does not reliably render these:
+       blank lines inside the block cause it to be split into multiple paragraphs.
+
+    2. **Blockquote-prefixed fenced blocks** — lines starting with ``>`` that open
+       a fenced code block on the same line (e.g. ``> ```text``).  Python
+       markdown misparses the opening fence as inline code.
+
+    Both cases are replaced with a unique placeholder token.  After markdown
+    parsing the caller must call :func:`_restore_code_placeholders` to substitute
+    the tokens back with the correct ``<pre><code>`` HTML.
+
+    Returns
+    -------
+    tuple[str, dict[str, str]]
+        Modified markdown text and a ``{placeholder_key: html}`` mapping.
+    """
+    lines = text.split("\n")
+    result: list[str] = []
+    in_fenced = False
+    fence_indent = ""      # string prefix that must match on every content/close line
+    fence_marker = ""
+    lang = ""
+    code_lines: list[str] = []
+    placeholders: dict[str, str] = {}
+    counter = 0
+
+    for line in lines:
+        if not in_fenced:
+            # Case 1: indented fenced block (4+ spaces, inside list item)
+            m_indent = re.match(r"^( {4,})(```+|~~~+)(\S*)$", line)
+            # Case 2: blockquote-prefixed fenced block  (> ```lang)
+            m_bq = re.match(r"^(>+ *)(```+|~~~+)(\S*)$", line)
+
+            if m_indent:
+                in_fenced = True
+                fence_indent = m_indent.group(1)
+                fence_marker = m_indent.group(2)
+                lang = m_indent.group(3)
+                code_lines = []
+            elif m_bq:
+                in_fenced = True
+                fence_indent = m_bq.group(1)
+                fence_marker = m_bq.group(2)
+                lang = m_bq.group(3)
+                code_lines = []
+            else:
+                result.append(line)
+        else:
+            end_pattern = r"^" + re.escape(fence_indent) + re.escape(fence_marker) + r"\s*$"
+            if re.match(end_pattern, line):
+                in_fenced = False
+                lang_attr = f' class="language-{lang}"' if lang else ""
+                code_content = ""
+                for cl in code_lines:
+                    # Strip the fence prefix (indentation or blockquote markers).
+                    if cl.startswith(fence_indent):
+                        cl = cl[len(fence_indent):]
+                    # Escape HTML special characters inside the code block.
+                    cl = cl.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                    code_content += cl + "\n"
+                html = f"<pre><code{lang_attr}>{code_content}</code></pre>"
+                key = f"CBKCODE{counter}PLACEHOLDER"
+                counter += 1
+                placeholders[key] = html
+                # For blockquote-prefixed fences, wrap the placeholder in blank
+                # blockquote lines so the markdown parser produces a standalone
+                # <p>key</p> rather than appending the token to the preceding
+                # paragraph.  This ensures _restore_code_placeholders can do a
+                # clean <p>key</p> → <pre><code> substitution.
+                if fence_indent.startswith(">"):
+                    bq_blank = fence_indent.rstrip()  # ">" or ">>"
+                    result.append(bq_blank)
+                    result.append(fence_indent + key)
+                    result.append(bq_blank)
+                else:
+                    # Emit the placeholder at the same indentation level so the
+                    # markdown parser places it inside the correct list item.
+                    result.append(fence_indent + key)
+            else:
+                code_lines.append(line)
+
+    if in_fenced:
+        # Unclosed fence — emit as-is so the document is not silently truncated.
+        result.append(f"{fence_indent}{fence_marker}{lang}")
+        result.extend(code_lines)
+
+    return "\n".join(result), placeholders
+
+
+def _restore_code_placeholders(html: str, placeholders: dict[str, str]) -> str:
+    """Replace code placeholder tokens in HTML with the actual ``<pre><code>`` blocks.
+
+    Python markdown may wrap placeholder tokens in ``<p>...</p>`` and may
+    insert a trailing newline inside the tag (e.g. ``<p>KEY\\n</p>``).  A
+    regex match is used to handle both variants cleanly.
+    """
+    for key, replacement in placeholders.items():
+        # Match <p>KEY</p> with optional surrounding whitespace.
+        html = re.sub(r"<p>\s*" + re.escape(key) + r"\s*</p>", replacement, html)
+        # Fallback: replace any remaining bare token (e.g. inside a list item).
+        html = html.replace(key, replacement)
+    return html
 
 
 # ---------------------------------------------------------------------------
@@ -143,6 +344,69 @@ def _emoji_blockquote_to_table(container: Tag, soup: BeautifulSoup) -> None:
         blockquote.replace_with(table)
 
 
+def _non_emoji_blockquote_to_table(container: Tag, soup: BeautifulSoup) -> None:
+    """Convert non-emoji <blockquote> elements to single-column bordered tables.
+
+    The table uses a white background with a visible border.  Lists inside the
+    blockquote are converted to the nested ``ul > li[none] > ul > li[aria]``
+    structure used by the Chumbaka LMS.
+    """
+    for blockquote in list(container.find_all("blockquote")):
+        # Build table wrapper
+        table = soup.new_tag("table")
+        table["style"] = "border-collapse: collapse; width: 100%; background-color: #ffffff;"
+        table["border"] = "1"
+        table["cellpadding"] = "20"
+
+        tbody = soup.new_tag("tbody")
+        tr = soup.new_tag("tr")
+        td = soup.new_tag("td")
+        td["style"] = "width: 100%;"
+
+        for child in list(blockquote.children):
+            if isinstance(child, NavigableString):
+                continue  # skip bare whitespace text nodes
+
+            if child.name in ("ul", "ol"):
+                # Convert to nested list structure
+                outer_ul = soup.new_tag("ul")
+                outer_li = soup.new_tag("li")
+                outer_li["style"] = "list-style-type: none;"
+                inner_ul = soup.new_tag("ul")
+
+                for item in list(child.find_all("li", recursive=False)):
+                    new_li = soup.new_tag("li")
+                    new_li["aria-level"] = "1"
+                    new_li.extend(list(item.children))
+                    inner_ul.append(new_li)
+
+                outer_li.append(inner_ul)
+                outer_ul.append(outer_li)
+                td.append(outer_ul)
+
+            elif child.name == "p":
+                # Detect bold-only paragraph → heading
+                contents = [c for c in child.children
+                            if not (isinstance(c, NavigableString) and c.strip() == "")]
+                if (len(contents) == 1
+                        and isinstance(contents[0], Tag)
+                        and contents[0].name == "strong"):
+                    heading_text = contents[0].decode_contents().rstrip(":")
+                    new_p = BeautifulSoup(
+                        f"<p><strong>{heading_text}</strong></p>", "html.parser"
+                    ).find("p")
+                    td.append(new_p)
+                else:
+                    td.append(child.__copy__())
+            else:
+                td.append(child.__copy__())
+
+        tr.append(td)
+        tbody.append(tr)
+        table.append(tbody)
+        blockquote.replace_with(table)
+
+
 def _nested_ol_to_alpha(container: Tag) -> None:
     """Set type="a" on ordered lists that are direct children of <li>."""
     for ol in container.find_all("ol"):
@@ -180,6 +444,33 @@ def _add_table_spacing(container: Tag, soup: BeautifulSoup) -> None:
             nxt = nxt.next_sibling
         for _ in range(max(0, 1 - br_count)):
             table.insert_after(soup.new_tag("br"))
+
+
+def _add_details_spacing(container: Tag, soup: BeautifulSoup) -> None:
+    """Append trailing <br> tags inside each <details> element.
+
+    - Every non-last <details>: append 3 <br> at the end of its content so
+      there is visual separation before the next section when expanded.
+    - Last <details>: append 2 <br> at the end of its content.
+
+    All <br> tags are placed *inside* the <details> elements so they are only
+    visible when a section is expanded, not as blank space between collapsed
+    section headers.
+    """
+    details_list = [c for c in container.children
+                    if isinstance(c, Tag) and c.name == "details"]
+    if not details_list:
+        return
+
+    # 3 <br> at the end of each non-last <details> (inside)
+    for det in details_list[:-1]:
+        for _ in range(3):
+            det.append(soup.new_tag("br"))
+
+    # 2 <br> at the end of the last <details> (inside)
+    last = details_list[-1]
+    for _ in range(2):
+        last.append(soup.new_tag("br"))
 
 
 def _add_list_spacing(container: Tag, soup: BeautifulSoup) -> None:
@@ -232,8 +523,16 @@ def convert(
     str
         HTML string ready to paste into Chumbaka LMS.
     """
+    markdown_text = _strip_front_matter(markdown_text)
+    markdown_text = _separate_consecutive_blockquotes(markdown_text)
+    markdown_text = _fix_blockquote_heading_list(markdown_text)
+    markdown_text, code_placeholders = _preprocess_fenced_code_in_lists(markdown_text)
+
     converter = _md_lib.Markdown(extensions=["tables", "fenced_code"])
     raw_html = converter.convert(markdown_text)
+    raw_html = _restore_code_placeholders(raw_html, code_placeholders)
+    # Remove the blockquote-break separator comments (Step 0c cleanup)
+    raw_html = raw_html.replace("<!-- blockquote-break -->", "")
 
     # Wrap in a root element for reliable top-level child iteration
     soup = BeautifulSoup(f"<div id='cbk-root'>{raw_html}</div>", "html.parser")
@@ -241,10 +540,12 @@ def convert(
 
     _h3_to_collapsible(container, soup, border_radius)
     _emoji_blockquote_to_table(container, soup)
+    _non_emoji_blockquote_to_table(container, soup)
     _nested_ol_to_alpha(container)
     _add_table_spacing(container, soup)
     if add_list_spacing:
         _add_list_spacing(container, soup)
+    _add_details_spacing(container, soup)
 
     return container.decode_contents()
 
@@ -284,17 +585,19 @@ def main() -> None:
     if not src.is_file():
         sys.exit(f"File not found: {src}")
 
+    if args.output:
+        out_path = Path(args.output)
+    else:
+        out_path = src.with_suffix(".html")
+
     html = convert(
         src.read_text(encoding="utf-8"),
         add_list_spacing=not args.no_list_spacing,
         border_radius=args.border_radius,
     )
 
-    if args.output:
-        Path(args.output).write_text(html, encoding="utf-8")
-        print(f"Saved to {args.output}")
-    else:
-        sys.stdout.write(html)
+    out_path.write_text(html, encoding="utf-8")
+    print(f"Saved to {out_path}")
 
 
 if __name__ == "__main__":

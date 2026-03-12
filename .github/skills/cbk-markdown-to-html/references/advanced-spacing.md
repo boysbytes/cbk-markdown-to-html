@@ -97,8 +97,13 @@ Format: `"current-element_to_next-element": number-of-br-tags`
 ### Details (Collapsible) Spacing
 
 ```javascript
-"details_to_details": 1,     // Collapsible → Collapsible
+"details_trailing": 3,       // <br> appended inside each non-last <details> (before </details>)
+"details_last_trailing": 2,  // <br> appended inside the last <details>
 ```
+
+> **Note:** Spacing is placed **inside** the `<details>` block so it is only visible when a section is
+> expanded. No `<br>` tags are inserted between `</details>` and `<details>` tags, which would create
+> blank gaps between collapsed section headers.
 
 ### Iframe Spacing
 
