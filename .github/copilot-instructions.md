@@ -1,50 +1,43 @@
-﻿## AI Coding Agent Guide
+﻿# Project Guidelines
 
-Use this to get productive quickly on this repo. Keep changes minimal, static-host friendly, and aligned with the existing patterns.
+## Architecture & Focus
+- **Purpose**: Convert Markdown to HTML for Chumbaka LMS authoring and embedding.
+- **Primary Tool**: The AI skill (`.github/skills/cbk-markdown-converter/SKILL.md`) is the primary interface for performing conversions directly via AI agents.
+- **Web UI**: Two UIs exist for manual editing:
+  - `index.html`: A standalone vanilla app without build steps.
+  - `vite-app/`: A Vite-powered React project (using `MarkdownToHTMLApp.jsx`) that builds the static site.
+- **Static Output**: The prebuilt Vite output is stored in the `docs/` folder, which is served via GitHub Pages at `/cbk-markdown-to-html/`.
 
-### Big picture
-- Purpose: Convert Markdown to HTML for Chumbaka LMS authoring and embedding.
-- Two UIs exist:
-	- `index.html`: standalone, no build; uses CDN `marked` and custom DOM transforms.
-	- React app: `MarkdownToHTMLApp.jsx`; prebuilt output lives in `docs/` (Vite build), served as static site.
-- No Node toolchain is committed here (no package.json). React builds happen outside this repo and the output is copied into `docs/`.
+## Build and Test
+- **Web UI Development**:
+  ```powershell
+  cd vite-app
+  npm install
+  npm run dev
+  ```
+- **Web UI Production Build**:
+  ```powershell
+  cd vite-app
+  npm run build
+  # After building, copy the contents of vite-app/dist/ into docs/ to update the GitHub Pages site.
+  ```
+- **Local Preview**:
+  ```powershell
+  npx http-server .\docs -p 8080
+  ```
 
-### Source layout
-- `index.html`: vanilla app with inline CSS/JS; key functions: `convertMarkdown`, `processCustomMarkdown`, `createCollapsibleSections`, `processBlockquotes`, `applyCustomSpacing`, `getElementType` and UI utilities.
-- `MarkdownToHTMLApp.jsx`: React component exporting the same converter behaviors via `formatHtml(...)` with options (spacing for numbered lists; optional rounded summary corners).
-- `docs/`: Vite-generated static site for hosting (GitHub Pages). Entry is `docs/index.html` mounting React at the element with id 'root' and loading assets under /cbk-markdown-to-html/.
+## Conventions
+- **Idempotency**: Keep custom Markdown transforms idempotent and DOM-based after `marked.parse()`.
+- **Spacing**: Use explicit `<br>` insertions rather than CSS margins to match LMS behavior. 
+- **Core Transforms**:
+  - H3 headers become collapsible `<details><summary>` blocks (padding and optional border radius).
+  - Blockquotes starting with an emoji become peach-colored table blocks.
+- **Static First**: Avoid introducing script injections in generated HTML. Ensure LMS safety.
+- **Parity**: When editing transforms or spacing in `vite-app/src/MarkdownToHTMLApp.jsx`, mirror the changes in the standalone `index.html` to keep feature parity.
 
-### Core transforms and spacing rules
-- H3 to collapsible sections: Consecutive content after each <h3> is wrapped in <details><summary>...</summary> ...</details>. Summary style uses background color f9f7f0 and padding; border radius is optional in React (prop flag).
-- Emoji blockquotes: A blockquote whose first paragraph starts with an emoji becomes a peach table block. In vanilla: a table element with class emoji-blockquote and inline background-color ffe5b4, with CSS in index.html. In React: inline widths/height and cellpadding=20 for consistent layout.
-- Spacing: Implemented with explicit `<br>` insertions.
-	- Vanilla: global `spacingConfig` controls element-to-element spacing (e.g., list-to-list, image-to-paragraph). Applied by `applyCustomSpacing` across top-level and nested list content.
-	- React: `addLineSpacing('table')` and optional 3-line spacing after first-level ordered list items.
-- Clipboard: Uses `navigator.clipboard` with `execCommand` fallback; keep both paths.
-
-### Development and running
-- Quick preview (no build): open `index.html` in a browser, or serve the folder statically.
-- Preview prod build: serve `docs/` statically. Example PowerShell: `npx http-server .\docs -p 8080`; open http://localhost:8080.
-- React development: create a separate Vite/CRA project locally, import `MarkdownToHTMLApp.jsx`, build, then copy the build output back into `docs/` (respecting base path `/cbk-markdown-to-html/`).
-
-### When to edit what
-- Minor UI/spacing/transform tweaks for the standalone tool: edit `index.html` JS/CSS. Mirror meaningful transform changes in `MarkdownToHTMLApp.jsx` to keep parity.
-- React-only UX (shadcn-style button, options toggles): edit `MarkdownToHTMLApp.jsx`; regenerate external build and update `docs/`.
-- Do not add a package.json or introduce a bundler here unless requested; this repo intentionally commits only the source component and the built site.
-
-### Conventions and cautions
-- Keep transforms idempotent and DOM-based after `marked.parse()`. Avoid introducing script injection in generated HTML.
-- For new spacing cases, update `getElementType` and `spacingConfig` (vanilla) or extend targeted spacing in React; prefer `<br>` insertion over CSS margins to match LMS behavior.
-- GitHub Pages pathing: `docs/index.html` references assets under `/cbk-markdown-to-html/`. Preserve that base when rebuilding.
-
-### Agent Skill Alternative
-- **CBK Markdown Converter Skill**: `.github/skills/cbk-markdown-converter/SKILL.md`
-  - Enables AI agents to perform markdown-to-HTML conversions directly without the web UI
-  - Contains all transformation logic and algorithms
-  - Use when users need conversions done by AI rather than the standalone tools
-
-### References
-- Writing: `.github/instructions/writing.instructions.md`
-- Markdown rules: `.github/instructions/markdown.instructions.md`
-- Project overview: `README.md`
+## References
+- **Skill Definition**: `.github/skills/cbk-markdown-converter/SKILL.md`
+- **Writing Docs**: `.github/instructions/writing.instructions.md`
+- **Markdown Rules**: `.github/instructions/markdown.instructions.md`
+- **Project Overview**: `README.md`
 

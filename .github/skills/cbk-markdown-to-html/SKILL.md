@@ -53,9 +53,10 @@ html = convert(markdown_text)
 | 2a | Emoji callout | `<blockquote><p>💡 …</p></blockquote>` | `<table class="emoji-blockquote" …>…</table>` |
 | 2b | Non-emoji blockquote | `<blockquote>` (no leading emoji) | `<table style="border-collapse:collapse;width:100%;background-color:#ffffff;" border="1" cellpadding="20">…</table>` |
 | 3 | Nested OL alpha | `<li><ol><li>…` | `<li><ol type="a"><li>…` |
-| 4 | Table spacing | `…<table>…` | `…<br><table>…<br>` |
-| 4 | List spacing | `<li>item</li><li>` | `<li>item<br><br><br></li><li>` |
-| 4 | Sub-list spacing | non-last `<li>` inside nested `<ol type="a">` | append `<br><br>` at end of each non-last sub-item |
+| 4a | Markdown table border | `<table>` (no existing border) | `<table border="1" style="border-collapse: collapse;">` |
+| 4b | Table spacing | `…<table>…` | `…<br><table>…<br>` |
+| 4c | List spacing | `<li>item</li><li>` | `<li>item<br><br><br></li><li>` |
+| 4c | Sub-list spacing | non-last `<li>` inside nested `<ol type="a">` | append `<br><br>` at end of each non-last sub-item |
 | 5 | Section trailing spacing | last element in each non-last `<details>` | append `<br><br><br>` inside section |
 | 5 | Last section trailing | last element in last `<details>` | append `<br><br>` inside section |
 
@@ -71,6 +72,20 @@ Full rules, examples, and edge cases: [cbk-transforms.md](references/cbk-transfo
 | Last section trailing spacing | 2 | — | `<br>` count appended inside the last `<details>` block |
 
 When converting manually, ask: "Add 3-line spacing after numbered list items? (default: yes)" and "Add rounded corners to section titles? (default: no)". Section-to-section spacing (3 `<br>`) and last-section trailing spacing (2 `<br>`) are always applied.
+
+## Pre-processing Rules
+
+Apply these **before** passing the markdown text to the parser.
+
+| Step | Rule | Why |
+|------|------|-----|
+| 0a | Strip YAML front matter (`---` block) | Prevents it rendering as raw paragraph text |
+| 0b | Replace fenced code blocks (indented 4+, `>` prefixed, or both) with placeholders | Python's `markdown` library misparses these |
+| 0c | Inject `<!-- blockquote-break -->` between adjacent blockquote groups | Prevents parser merging them into one `<blockquote>` |
+| 0d | Insert blank `>` line between a non-list blockquote line and an immediately following `> - ` list line | Produces `<p>` + `<ul>` instead of merged `<p>` |
+| 0e | Insert blank line between a plain continuation line and a bullet marker line inside a list item (4+ space indent) | Produces `<p>` + `<ul>` instead of merged `<p>` |
+
+Full rules: [cbk-transforms.md](references/cbk-transforms.md).
 
 ## Output Format
 
@@ -192,8 +207,24 @@ See full algorithm and examples in [cbk-transforms.md](references/cbk-transforms
 - [ ] Last `<details>` element has `<br><br>` appended inside (before `</details>`)
 - [ ] (if enabled) 3 `<br>` at end of each non-last top-level `<li>` in `<ol>`
 - [ ] 2 `<br>` at end of each non-last `<li>` inside nested `<ol type="a">` (sub-numbered items)
-- [ ] Fenced code blocks inside list items and blockquotes render as `<pre><code>` (not raw backtick text)
+- [ ] Fenced code blocks in emoji callout blockquotes render as `<pre><code>` (not inline `<code>` or raw backtick text)
+- [ ] Fenced code blocks inside list-item blockquotes (4+-space-indented `>` lines) render as `<pre><code>`
+- [ ] Plain markdown tables have `border="1"` and `style="border-collapse: collapse;"`
+- [ ] Emoji tables do NOT get extra `border` or `border-collapse` styling
 - [ ] Output written to `.html` file on disk
+
+## Quality Check Before Handing Off
+
+**Always perform these checks before presenting the output as complete.**
+
+1. Open (or scan) the output `.html` file and verify:
+   - All `<h3>` sections are wrapped in `<details><summary>` blocks.
+   - All emoji blockquotes render as two-column peach tables — no raw `<code>` text inside them.
+   - All non-emoji blockquotes render as single-column white bordered tables.
+   - All plain markdown tables have `border="1"` and `border-collapse: collapse;`.
+   - Paragraph + bullet-list combinations inside list items are separate elements (not merged into one `<p>`).
+   - Fenced code blocks inside blockquotes inside list items render as `<pre><code>`, not inline code or raw text.
+2. If any issue is detected, fix it before handing off.
 
 ## Advanced Spacing
 

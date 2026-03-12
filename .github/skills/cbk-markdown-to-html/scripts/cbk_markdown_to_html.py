@@ -4,19 +4,23 @@ cbk_markdown_to_html.py — Convert Markdown to HTML for Chumbaka LMS.
 
 Pre-processing steps (before markdown parsing):
   0a. Strip YAML front matter (--- delimited block at start of file)
-  0b. Convert indented fenced code blocks inside list items to raw HTML <pre><code>
-      (Python markdown's fenced_code extension does not handle these reliably)
+  0b. Convert indented/blockquote-prefixed fenced code blocks to raw HTML <pre><code>.
+      Handles three variants: 4+-space-indented, blockquote-prefixed (> ```),
+      and combined (4+-space-indented blockquote, e.g. inside a list item).
   0c. Separate consecutive blockquote blocks with an HTML comment so the
       parser produces separate <blockquote> elements instead of merging them.
   0d. Insert a blank blockquote line between a non-list blockquote line and an
       immediately following list line so parser creates <p> + <ul> not merged <p>.
+  0e. Insert a blank line between a plain continuation line and a bullet-list line
+      inside list-item content (4+-space-indented) so parser creates <p> + <ul>.
 
 Transforms applied in order (after markdown parsing):
   1. <h3> → <details><summary> collapsible sections
   2. Emoji <blockquote> → styled <table class="emoji-blockquote">
   2b. Non-emoji <blockquote> → bordered <table> with nested list structure
   3. Nested <ol> inside <li> → type="a"
-  4. <br> spacing around <table> elements
+  4a. Add border="1" and border-collapse styling to plain markdown <table> elements
+  4b. <br> spacing around <table> elements
   5. (optional) 3 <br> tags after each non-last first-level <ol> <li>
   6. 3 <br> between consecutive <details> elements
   7. 2 <br> appended at end of last <details> element
@@ -133,10 +137,56 @@ def _fix_blockquote_heading_list(text: str) -> str:
     return "\n".join(result)
 
 
+def _fix_paragraph_list_in_list_items(text: str) -> str:
+    """Insert a blank line between a non-list continuation line and an
+    immediately following bullet marker line inside a list item.
+
+    Inside list items (4+ space-indented content), a plain continuation line
+    followed directly by a bullet item (without a blank line between them)
+    gets merged into a single paragraph by most markdown parsers.  Adding the
+    blank line causes the parser to produce a proper <p> + <ul> structure.
+
+    Example
+    -------
+    Before::
+
+        The sigmoid function has an S-shaped curve:
+        - When z is very negative, probability is close to 0
+        - When z is very positive, probability is close to 1
+
+    After::
+
+        The sigmoid function has an S-shaped curve:
+
+        - When z is very negative, probability is close to 0
+        - When z is very positive, probability is close to 1
+    """
+    lines = text.split("\n")
+    result: list[str] = []
+    for i, line in enumerate(lines):
+        result.append(line)
+        if i + 1 >= len(lines):
+            continue
+        next_line = lines[i + 1]
+        # Current line must be an indented (list-item continuation) non-bullet, non-blank line
+        if not re.match(r"^ {4,}\S", line):
+            continue
+        if re.match(r"^ {4,}[-*]\s", line):
+            continue  # current line is already a bullet
+        if re.match(r"^ {4,}\d+\.\s", line):
+            continue  # current line is a numbered item
+        if re.match(r"^ {4,}>", line):
+            continue  # current line is a blockquote (handled separately)
+        # Next line is an indented bullet → insert blank line
+        if re.match(r"^ {4,}[-*]\s", next_line):
+            result.append("")
+    return "\n".join(result)
+
+
 def _preprocess_fenced_code_in_lists(text: str) -> tuple[str, dict[str, str]]:
     """Replace fenced code blocks that Python markdown cannot handle with placeholders.
 
-    Two cases are covered:
+    Three cases are covered:
 
     1. **Indented fenced blocks** (inside list items) — indented by 4+ spaces.
        Python markdown's fenced_code extension does not reliably render these:
@@ -146,7 +196,11 @@ def _preprocess_fenced_code_in_lists(text: str) -> tuple[str, dict[str, str]]:
        a fenced code block on the same line (e.g. ``> ```text``).  Python
        markdown misparses the opening fence as inline code.
 
-    Both cases are replaced with a unique placeholder token.  After markdown
+    3. **Blockquote-prefixed fenced blocks inside list items** — lines with 4+
+       leading spaces followed by a ``>`` prefix (e.g. ``    > ```text``).
+       This combination is not handled by either case 1 or case 2 above.
+
+    All cases are replaced with a unique placeholder token.  After markdown
     parsing the caller must call :func:`_restore_code_placeholders` to substitute
     the tokens back with the correct ``<pre><code>`` HTML.
 
@@ -171,8 +225,19 @@ def _preprocess_fenced_code_in_lists(text: str) -> tuple[str, dict[str, str]]:
             m_indent = re.match(r"^( {4,})(```+|~~~+)(\S*)$", line)
             # Case 2: blockquote-prefixed fenced block  (> ```lang)
             m_bq = re.match(r"^(>+ *)(```+|~~~+)(\S*)$", line)
+            # Case 3: blockquote inside list item  (    > ```lang)
+            m_bq_in_list = re.match(r"^( {4,})(>+ *)(```+|~~~+)(\S*)$", line)
 
-            if m_indent:
+            if m_bq_in_list:
+                # Must test before m_indent: both match indented lines, but
+                # m_indent would not match (its group 2 would need to start
+                # with a backtick, not '>'), so order is a safeguard.
+                in_fenced = True
+                fence_indent = m_bq_in_list.group(1) + m_bq_in_list.group(2)
+                fence_marker = m_bq_in_list.group(3)
+                lang = m_bq_in_list.group(4)
+                code_lines = []
+            elif m_indent:
                 in_fenced = True
                 fence_indent = m_indent.group(1)
                 fence_marker = m_indent.group(2)
@@ -208,8 +273,13 @@ def _preprocess_fenced_code_in_lists(text: str) -> tuple[str, dict[str, str]]:
                 # <p>key</p> rather than appending the token to the preceding
                 # paragraph.  This ensures _restore_code_placeholders can do a
                 # clean <p>key</p> → <pre><code> substitution.
-                if fence_indent.startswith(">"):
-                    bq_blank = fence_indent.rstrip()  # ">" or ">>"
+                if ">" in fence_indent:
+                    # Wrap the placeholder in blank blockquote lines so the
+                    # parser produces a standalone <p>key</p> rather than
+                    # appending the token to the preceding paragraph.  This
+                    # works for pure blockquotes ("> ") and blockquotes inside
+                    # list items ("    > ").
+                    bq_blank = fence_indent.rstrip()  # strip trailing space after ">"
                     result.append(bq_blank)
                     result.append(fence_indent + key)
                     result.append(bq_blank)
@@ -416,6 +486,32 @@ def _nested_ol_to_alpha(container: Tag) -> None:
                 ol["type"] = "a"
 
 
+def _style_markdown_tables(container: Tag) -> None:
+    """Add border and border-collapse styling to plain markdown tables.
+
+    Regular markdown tables (generated by the ``tables`` extension) have no
+    border attributes.  This step adds ``border="1"`` and
+    ``style="border-collapse: collapse;"`` to every ``<table>`` that has not
+    already been styled by one of the blockquote transforms.
+
+    Styled tables (emoji callout and non-emoji blockquote) already carry an
+    explicit ``border`` attribute, so they are skipped.
+    """
+    for table in container.find_all("table"):
+        # Skip tables already created by blockquote transforms (they have border set)
+        if table.get("border") is not None:
+            continue
+        table["border"] = "1"
+        existing_style = table.get("style", "")
+        if "border-collapse" not in existing_style:
+            collapse_style = "border-collapse: collapse;"
+            table["style"] = (
+                (collapse_style + " " + existing_style).strip()
+                if existing_style
+                else collapse_style
+            )
+
+
 def _add_table_spacing(container: Tag, soup: BeautifulSoup) -> None:
     """Ensure at least one <br> before and after each <table>."""
     for table in container.find_all("table"):
@@ -555,6 +651,7 @@ def convert(
     markdown_text = _strip_front_matter(markdown_text)
     markdown_text = _separate_consecutive_blockquotes(markdown_text)
     markdown_text = _fix_blockquote_heading_list(markdown_text)
+    markdown_text = _fix_paragraph_list_in_list_items(markdown_text)
     markdown_text, code_placeholders = _preprocess_fenced_code_in_lists(markdown_text)
 
     converter = _md_lib.Markdown(extensions=["tables", "fenced_code"])
@@ -571,6 +668,7 @@ def convert(
     _emoji_blockquote_to_table(container, soup)
     _non_emoji_blockquote_to_table(container, soup)
     _nested_ol_to_alpha(container)
+    _style_markdown_tables(container)
     _add_table_spacing(container, soup)
     if add_list_spacing:
         _add_list_spacing(container, soup)
